@@ -617,6 +617,8 @@ html = f"""<!doctype html>
 <div class="wrap">
   {header_html}
 
+  {quality_card}
+
   <div class="section-title"><h2>Frota</h2><span class="hint">Situação atual dos equipamentos</span></div>
   {kpi_frota}
 

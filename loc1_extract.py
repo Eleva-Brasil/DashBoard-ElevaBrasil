@@ -11,6 +11,7 @@ heurística por texto), "Desconto"/"IRF"/"Total Documento" não vêm da API
 (tipo_modelo_mapping.csv) em vez de vir do SAP B1 diretamente.
 """
 import json
+import re
 import time
 from pathlib import Path
 from typing import Dict, Optional
@@ -185,28 +186,60 @@ def _fetch_invoices_since(client: Loc1Client, since: Optional[str], page_size: i
     return invoices
 
 
+DEVOLUCAO_NF_RE = re.compile(r"Nota Fiscal de Sa.da\s*-\s*(?:CA\s*-\s*)?(\d+)", re.IGNORECASE)
+
+TIPOS_FATURAMENTO_OFICIAL = {"Fatura", "NFse Serviço", "NFe DANFe"}  # "NF de débito" fica fora - confirmado com o usuário
+
+
+def _fetch_notas_devolvidas(client: Loc1Client) -> set:
+    """Busca AR-Credit-Memo (Notas de Devolução) e extrai, do texto do JrnlMemo,
+    o número da nota fiscal original devolvida - replica o NOT IN contra
+    ORIN/RIN1 (BaseType=13) da query original, já que a API não expõe essas
+    tabelas diretamente."""
+    notas = client.list_all("DocMkt", extra={"Document": "AR-Credit-Memo"})
+    devolvidas = set()
+    for n in notas:
+        m = DEVOLUCAO_NF_RE.search(n.get("JrnlMemo") or "")
+        if m:
+            devolvidas.add(m.group(1))
+    return devolvidas
+
+
 def get_faturamento_df(client: Optional[Loc1Client] = None, since: Optional[str] = "2025-01-01",
-                        include_cnpj: bool = False) -> pd.DataFrame:
+                        include_cnpj: bool = False, apenas_tipos_oficiais: bool = True) -> pd.DataFrame:
     """`since`: AAAA-MM-DD, limita aos documentos a partir dessa data (mais rápido).
     Passe since=None para buscar o histórico completo.
     `include_cnpj`: busca CNPJ/CPF via BusinessPartner/List (12k+ registros, ~126
     páginas, cacheado 24h em disco). Desligado por padrão porque esse campo só
-    alimenta um contador de qualidade de dados, não entra em nenhum cálculo."""
+    alimenta um contador de qualidade de dados, não entra em nenhum cálculo.
+    `apenas_tipos_oficiais`: mantém só Fatura/NFse Serviço/NFe DANFe (exclui
+    "NF de débito"), conforme definição de Faturamento confirmada com o usuário."""
     client = client or get_client()
     invoices = _fetch_invoices_since(client, since)
     tax_ids = _load_business_partner_tax_ids(client) if include_cnpj else {}
+    notas_devolvidas = _fetch_notas_devolvidas(client)
 
     rows = []
     canceladas = 0
+    devolvidas_excluidas = 0
     for inv in invoices:
         memo = (inv.get("JrnlMemo") or "")
         if memo.strip().lower() == "cancelado":
             canceladas += 1
             continue
 
+        serial = inv.get("Serial", "")
+        if serial and serial in notas_devolvidas:
+            devolvidas_excluidas += 1
+            continue
+
         total_faturado = sum(float(i.get("InsTotal", 0) or 0) for i in inv.get("Installments", []))
         total_documento = sum(float(i.get("PriceBefDi", 0) or 0) for i in inv.get("Items", []))
         card_code = inv.get("CardCode", "")
+        tipo = TIPO_POR_SEQCODE.get(inv.get("SeqCode", ""))
+
+        if apenas_tipos_oficiais and tipo not in TIPOS_FATURAMENTO_OFICIAL:
+            continue
 
         rows.append({
             "TELA": "NF de saída",
@@ -223,10 +256,11 @@ def get_faturamento_df(client: Optional[Loc1Client] = None, since: Optional[str]
             "Desconto": 0.0,
             "IRF": 0.0,
             "Total Faturado": total_faturado,
-            "Tipo": TIPO_POR_SEQCODE.get(inv.get("SeqCode", "")),
+            "Tipo": tipo,
         })
 
     df = pd.DataFrame(rows)
+    df.attrs["devolvidas_excluidas"] = devolvidas_excluidas
     df.attrs["canceladas_excluidas"] = canceladas
     return df
 
