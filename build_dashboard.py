@@ -181,8 +181,9 @@ quality_notes.append({
 quality_notes.append({
     "icon": "🔴",
     "title": "Sem histórico para comparar a frota com período anterior",
-    "detail": "\"Status de Maquinas.xlsx\" é uma fotografia do momento atual (não tem data). Por isso, os cards de frota mostram "
-              "a situação de hoje, mas não uma variação \"vs. período anterior\" — isso exigiria snapshots salvos ao longo do tempo."
+    "detail": "Os dados de status de máquinas (Disponível/Em Contrato/Manutenção) são uma fotografia do momento atual (não têm "
+              "data). Por isso, os cards de frota mostram a situação de agora, mas não uma variação \"vs. período anterior\" — "
+              "isso exigiria salvar snapshots ao longo do tempo, o que passa a ser possível agora que a atualização é automática."
 })
 
 # ---------------------------------------------------------------------------

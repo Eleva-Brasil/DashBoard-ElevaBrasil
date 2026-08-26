@@ -103,12 +103,25 @@ body{
 
 /* grid */
 .grid{ display:grid; gap:14px; }
+.grid > *{ min-width:0; }
 .grid-5{ grid-template-columns: repeat(5, 1fr); }
 .grid-4{ grid-template-columns: repeat(4, 1fr); }
 .grid-3{ grid-template-columns: repeat(3, 1fr); }
 .grid-2{ grid-template-columns: 1.3fr 1fr; }
 @media (max-width:1200px){ .grid-5{grid-template-columns:repeat(3,1fr);} .grid-4{grid-template-columns:repeat(2,1fr);} .grid-3{grid-template-columns:repeat(2,1fr);} .grid-2{grid-template-columns:1fr;} }
-@media (max-width:720px){ .grid-5,.grid-4,.grid-3{grid-template-columns:1fr;} }
+@media (max-width:720px){
+  .grid-5,.grid-4,.grid-3{grid-template-columns:1fr;}
+  .wrap{ padding:16px 14px 40px; }
+  .occ-row{
+    grid-template-columns: 1fr 50px;
+    grid-template-areas: "name pct" "total total" "stack stack";
+    row-gap:6px;
+  }
+  .occ-name{ grid-area:name; }
+  .occ-pct{ grid-area:pct; }
+  .occ-total{ grid-area:total; text-align:left; }
+  .occ-stack{ grid-area:stack; }
+}
 
 /* cards */
 .card{ background:var(--card-bg); color:var(--ink-primary); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 18px; }
@@ -142,8 +155,12 @@ body{
 .table-card{ background:var(--card-bg); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 18px 8px; color:var(--ink-primary); }
 .table-card h3{ margin:0 0 4px; font-size:13.5px; font-weight:700; color:var(--ink-primary); }
 .table-card .hint{ font-size:11.5px; color:var(--ink-muted); margin-bottom:10px; display:block; }
-.tbl-scroll{ max-height:430px; overflow-y:auto; border-top:1px solid var(--hairline); }
-table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+.tbl-scroll{ max-height:430px; overflow-y:auto; overflow-x:auto; -webkit-overflow-scrolling:touch; border-top:1px solid var(--hairline); }
+table{ width:100%; min-width:640px; border-collapse:collapse; font-size:12.5px; }
+@media (max-width:720px){
+  .tbl-scroll{ max-height:60vh; }
+  table{ min-width:600px; }
+}
 thead th{ position:sticky; top:0; background:#fafbfd; text-align:right; padding:8px 8px; font-weight:700; color:var(--ink-secondary); border-bottom:1px solid var(--hairline); white-space:nowrap; }
 thead th:first-child, thead th:nth-child(2){ text-align:left; }
 tbody td{ padding:6px 8px; text-align:right; border-bottom:1px solid #f1f3f6; white-space:nowrap; }
@@ -625,7 +642,7 @@ html = f"""<!doctype html>
   </div>
 
   <div class="footer">
-    Dashboard Gerencial de Operações &middot; Eleva Brasil &middot; gerado automaticamente a partir de "Faturamento Eleva Brasil.xlsx", "Status de Maquinas.xlsx" e "Taxa de Ocupação - Eleva Brasil.xlsx" &middot; corte de dados: {fat['corte_label']}
+    Dashboard Gerencial de Operações &middot; Eleva Brasil &middot; gerado automaticamente a partir da API da LOC1 (Faturamento, Status de Máquinas e Taxa de Ocupação) &middot; corte de dados: {fat['corte_label']}
   </div>
 </div>
 {JS}
