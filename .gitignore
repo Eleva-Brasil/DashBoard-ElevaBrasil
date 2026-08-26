@@ -1,0 +1,7 @@
+.DS_Store
+*.xlsx
+dashboard_data.json
+dashboard_eleva.html
+.loc1_cache_business_partners.json
+email_state.json
+_site/
