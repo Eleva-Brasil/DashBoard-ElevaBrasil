@@ -74,14 +74,22 @@ if FONTE_DADOS == "api":
     fat = get_faturamento_df(_client, since=os.environ.get("LOC1_FATURAMENTO_DESDE", "2025-01-01"))
 
     quality_notes.append({
+        "icon": "🔴",
+        "title": "FATURAMENTO SUPERESTIMADO — API não filtra notas canceladas",
+        "detail": "A API da LOC1 não expõe o campo de cancelamento (\"CANCELED\") no endpoint de notas fiscais, então "
+                  "os cards de Faturamento deste painel somam notas canceladas junto com as válidas. Validado com dados "
+                  "reais: o valor mostrado fica superestimado em cerca de 30-40% acima do faturamento líquido real. "
+                  "NÃO usar os números de Faturamento deste painel para decisão ou apresentação até esse campo ser "
+                  "liberado pela LOC1 — os cards de Frota, Status de Máquinas e Taxa de Ocupação não são afetados "
+                  "por esse problema."
+    })
+    quality_notes.append({
         "icon": "🟡",
         "title": "Dados conectados via API da LOC1 (não mais planilha manual)",
-        "detail": "Esta versão lê direto da API da LOC1 em vez das 3 planilhas .xlsx. Duas ressalvas enquanto alguns "
-                  "campos não são liberados pela LOC1 na integração: (1) \"Desconto\" e \"IRF\" ainda não vêm da API "
-                  "e aparecem como zero (\"Total Documento\" é aproximado como igual a \"Total Faturado\"); "
-                  "(2) o filtro de notas canceladas usa uma checagem de texto (não um campo oficial de cancelamento), "
-                  "então pode haver imprecisão pontual. \"Total Faturado\" e \"Data Faturamento\" (as métricas "
-                  "principais do painel) vêm direto da nota fiscal e não são afetadas por essas ressalvas."
+        "detail": "Esta versão lê direto da API da LOC1 em vez das 3 planilhas .xlsx. Ressalva adicional: \"Desconto\" "
+                  "e \"IRF\" ainda não vêm da API e aparecem como zero (\"Total Documento\" é aproximado como igual a "
+                  "\"Total Faturado\"). \"Total Faturado\" e \"Data Faturamento\" por nota individual estão corretos "
+                  "(validado nota a nota) — o problema é só a inclusão de notas canceladas, tratado no alerta acima."
     })
 else:
     fat = pd.read_excel(FAT_FILE)
