@@ -252,12 +252,12 @@ kpi_frota = f"""
   <div class="card">
     <h3>Máquinas Disponíveis</h3>
     <div class="kpi-row"><span class="kpi-value" style="color:var(--neutral)">{fmt_int(frota['disponivel'])}</span><span class="kpi-unit">máq.</span></div>
-    <div class="kpi-sub">{pct(frota['disponivel_pct'])} da frota &middot; <span class="delta neutral">sem histórico p/ comparação</span></div>
+    <div class="kpi-sub">{pct(frota['disponivel_pct'])} da frota</div>
   </div>
   <div class="card">
     <h3>Máquinas em Contrato</h3>
     <div class="kpi-row"><span class="kpi-value" style="color:var(--good)">{fmt_int(frota['contrato'])}</span><span class="kpi-unit">máq.</span></div>
-    <div class="kpi-sub">{pct(frota['contrato_pct'])} da frota &middot; <span class="delta neutral">sem histórico p/ comparação</span></div>
+    <div class="kpi-sub">{pct(frota['contrato_pct'])} da frota</div>
   </div>
   <div class="card">
     <h3>Máquinas em Manutenção</h3>
@@ -437,7 +437,7 @@ proj_delta = delta_html(comp["projecao_vs_ano_anterior_pct"], favor_up=True) if 
 yoy_card = f"""
 <div class="table-card">
   <h3>Comparativo Anual — {comp['ano_atual']} x {comp['ano_anterior']}</h3>
-  <span class="hint">Faturamento líquido mês a mês &middot; <i class="dot" style="background:var(--ink-muted)"></i>{comp['ano_anterior']} &middot; <i class="dot contr"></i>{comp['ano_atual']} (mês corrente parcial em <i class="dot disp"></i>) &middot; meses futuros de {comp['ano_atual']} ainda não existem, não são zero</span>
+  <span class="hint">Faturamento líquido mês a mês &middot; <i class="dot" style="background:var(--ink-muted)"></i>{comp['ano_anterior']} &middot; <i class="dot contr"></i>{comp['ano_atual']} (mês corrente parcial em <i class="dot disp"></i>)</span>
   {yoy_svg}
   <div class="mix-legend" style="margin:4px 0 14px; gap:22px;">
     <span><b>Total {comp['ano_anterior']} (ano completo):</b>&nbsp;{brl_m(comp['total_ano_anterior_completo']) if comp['total_ano_anterior_completo'] else '—'}</span>
@@ -467,7 +467,7 @@ for t in tipos:
 occ_table_card = f"""
 <div class="table-card">
   <h3>Taxa de Ocupação por Tipo do Modelo</h3>
-  <span class="hint">Ordenado por quantidade de equipamentos &middot; barra: <i class="dot disp"></i>Disponível <i class="dot contr"></i>Em Contrato <i class="dot manut"></i>Manutenção &middot; % à direita = ocupação</span>
+  <span class="hint">barra: <i class="dot disp"></i>Disponível <i class="dot contr"></i>Em Contrato <i class="dot manut"></i>Manutenção &middot; % à direita = ocupação</span>
   {''.join(occ_rows)}
 </div>
 """
@@ -520,21 +520,18 @@ equip_disp = D["equipamentos_disponiveis"]
 equip_rows = []
 for e in equip_disp:
     equip_rows.append(f"""<tr>
-      <td>{e['patrimonio']}</td>
       <td>{e['modelo']}</td>
       <td>{e['tipo'].title()}</td>
       <td>{e['serie']}</td>
-      <td>{e['serie_fabricante']}</td>
     </tr>""")
 
 equip_disp_card = f"""
 <div class="table-card">
   <h3>Equipamentos Disponíveis para Locação</h3>
-  <span class="hint">{len(equip_disp)} unidades com Status = Disponível agora &middot; patrimônio individual &middot; role para ver todas &middot; a planilha de origem não traz data nem localização, então "dias parado" e "localização" não aparecem aqui</span>
   <div class="tbl-scroll">
     <table>
       <thead><tr>
-        <th>Patrimônio</th><th>Modelo</th><th>Tipo</th><th>Nº de Série</th><th>Nº Série Fabricante</th>
+        <th>Modelo</th><th>Tipo</th><th>Nº de Série</th>
       </tr></thead>
       <tbody>{''.join(equip_rows)}</tbody>
     </table>
