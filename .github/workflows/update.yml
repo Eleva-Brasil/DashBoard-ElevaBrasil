@@ -2,8 +2,10 @@ name: Atualizar Dashboard Eleva Brasil
 
 on:
   schedule:
-    - cron: "0 * * * *"  # a cada hora, no minuto 0
-  workflow_dispatch: {}   # permite rodar manualmente pela aba Actions
+    # A cada hora, das 08h as 19h no horario de Brasilia (GitHub Actions usa
+    # UTC; Brasilia = UTC-3, sem horario de verao). 11h-22h UTC = 08h-19h BRT.
+    - cron: "0 11-22 * * *"
+  workflow_dispatch: {}   # permite rodar manualmente pela aba Actions, a qualquer hora
 
 permissions:
   contents: read

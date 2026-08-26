@@ -19,10 +19,17 @@ import base64
 import unicodedata
 from pathlib import Path
 from datetime import date
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 
 BASE = Path(__file__).parent
+FUSO_BR = ZoneInfo("America/Sao_Paulo")
+# Horário real da execução (para mostrar "Atualizado em" no painel e permitir
+# conferir se o agendamento automático está rodando no horário certo) -
+# sempre o relógio de verdade, nunca capado pelos dados.
+AGORA_BR = pd.Timestamp.now(tz=FUSO_BR)
+
 # "Hoje" é calculado dinamicamente a cada execução (nunca fixo), e limitado à
 # última data realmente presente na planilha de Faturamento — assim, se a
 # planilha ainda não tiver sido atualizada no dia da execução automática, o
@@ -33,7 +40,7 @@ HOJE = pd.Timestamp.now().normalize()
 FAT_FILE = BASE / "Faturamento Eleva Brasil.xlsx"
 STATUS_FILE = BASE / "Status de Maquinas.xlsx"
 OCC_FILE = BASE / "Taxa de Ocupação - Eleva Brasil.xlsx"
-LOGO_FILE = BASE / "eleva_logo.jpg"
+LOGO_FILE = BASE / "eleva_logo.png"
 OUT_FILE = BASE / "dashboard_eleva.html"
 
 
@@ -440,7 +447,7 @@ if not alertas:
 # 7) MONTAGEM DO PACOTE DE DADOS FINAL
 # ---------------------------------------------------------------------------
 data = {
-    "gerado_em": HOJE.strftime("%d/%m/%Y"),
+    "gerado_em": AGORA_BR.strftime("%d/%m/%Y %H:%M"),
     "frota": frota,
     "modelos_tabela": modelos_tabela,
     "equipamentos_disponiveis": equipamentos_disponiveis,

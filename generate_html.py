@@ -13,7 +13,7 @@ from pathlib import Path
 
 BASE = Path(__file__).parent
 DATA_FILE = BASE / "dashboard_data.json"
-LOGO_FILE = BASE / "eleva_logo.jpg"
+LOGO_FILE = BASE / "eleva_logo.png"
 OUT_FILE = BASE / "dashboard_eleva.html"
 
 with open(DATA_FILE, encoding="utf-8") as f:
@@ -90,7 +90,8 @@ body{
 /* header */
 .header{ display:flex; align-items:center; justify-content:space-between; gap:20px; padding:6px 4px 20px; flex-wrap:wrap; }
 .header-left{ display:flex; align-items:center; gap:16px; }
-.logo{ height:52px; width:auto; border-radius:8px; background:#fff; padding:6px 10px; }
+.logo{ height:72px; width:auto; border-radius:10px; background:#fff; padding:12px 18px; }
+@media (max-width:720px){ .logo{ height:52px; padding:10px 14px; } }
 .title-block h1{ margin:0; font-size:22px; font-weight:700; letter-spacing:.2px; }
 .title-block .sub{ margin-top:2px; font-size:13px; color:#b9c6dc; }
 .header-right{ text-align:right; font-size:12.5px; color:#b9c6dc; line-height:1.5; }
@@ -216,7 +217,7 @@ tbody tr:hover{ background:#f7f9fc; }
 header_html = f"""
 <div class="header">
   <div class="header-left">
-    <img class="logo" src="data:image/jpeg;base64,{LOGO_B64}" alt="Eleva Brasil" />
+    <img class="logo" src="data:image/png;base64,{LOGO_B64}" alt="Eleva Brasil" />
     <div class="title-block">
       <h1>Dashboard Gerencial de Operações</h1>
       <div class="sub">Visão Executiva &middot; Eleva Brasil</div>
