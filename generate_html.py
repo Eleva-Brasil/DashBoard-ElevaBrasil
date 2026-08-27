@@ -75,8 +75,8 @@ CSS = """
   --neutral:#2a78d6;
   --neutral-bg:#eaf2fc;
   --status-disp:#0ca30c;
-  --status-contr:#FFDE21;
-  --status-contr-text:#FFDE21;
+  --status-contr:#2a78d6;
+  --status-contr-text:#2a78d6;
   --status-manut:#d03b3b;
   --radius:14px;
   --shadow: 0 1px 2px rgba(10,20,40,0.06), 0 6px 20px rgba(10,20,40,0.10);
@@ -330,14 +330,14 @@ pot = D["potencial"]
 kpi_pot = f"""
 <div class="grid grid-3">
   <div class="card">
-    <h3>Receita Ativa (Em Contrato)</h3>
-    <div class="kpi-value" style="color:var(--status-contr-text)">{brl_m(pot['receita_ativa'])}<span class="kpi-unit">/mês</span></div>
-    <div class="kpi-sub">{pct(pot['pct_ativa'])} do potencial mensal da frota</div>
-  </div>
-  <div class="card">
     <h3>Potencial Parado (Disponível)</h3>
     <div class="kpi-value" style="color:var(--status-disp)">{brl_m(pot['receita_parada'])}<span class="kpi-unit">/mês</span></div>
     <div class="kpi-sub">{pct(pot['pct_parada'])} do potencial mensal &middot; <span class="tag warning">capital parado</span></div>
+  </div>
+  <div class="card">
+    <h3>Receita Ativa (Em Contrato)</h3>
+    <div class="kpi-value" style="color:var(--status-contr-text)">{brl_m(pot['receita_ativa'])}<span class="kpi-unit">/mês</span></div>
+    <div class="kpi-sub">{pct(pot['pct_ativa'])} do potencial mensal da frota</div>
   </div>
   <div class="card">
     <h3>Receita Perdida (Em Manutenção)</h3>
