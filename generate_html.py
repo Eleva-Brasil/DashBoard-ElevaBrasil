@@ -179,9 +179,11 @@ body{
 .table-card .hint{ font-size:11.5px; color:var(--ink-muted); margin-bottom:10px; display:block; }
 .tbl-scroll{ max-height:430px; overflow-y:auto; overflow-x:auto; -webkit-overflow-scrolling:touch; border-top:1px solid var(--hairline); }
 table{ width:100%; min-width:640px; border-collapse:collapse; font-size:12.5px; }
+.table-narrow table{ min-width:0; }
 @media (max-width:720px){
   .tbl-scroll{ max-height:60vh; }
   table{ min-width:600px; }
+  .table-narrow table{ min-width:0; }
 }
 thead th{ position:sticky; top:0; background:#fafbfd; text-align:right; padding:8px 8px; font-weight:700; color:var(--ink-secondary); border-bottom:1px solid var(--hairline); white-space:nowrap; }
 thead th:first-child, thead th:nth-child(2){ text-align:left; }
@@ -548,7 +550,7 @@ for e in equip_disp:
     </tr>""")
 
 equip_disp_card = f"""
-<div class="table-card">
+<div class="table-card table-narrow">
   <h3>Equipamentos Disponíveis para Locação</h3>
   <div class="tbl-scroll">
     <table>
