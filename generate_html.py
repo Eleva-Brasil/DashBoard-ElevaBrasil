@@ -87,6 +87,23 @@ body{
 }
 .wrap{ max-width:1440px; margin:0 auto; padding:22px 28px 60px; }
 
+/* app shell / sidebar de navegação */
+.app-shell{ display:flex; align-items:flex-stretch; min-height:100vh; }
+.sidebar{ width:216px; flex-shrink:0; padding:22px 14px; display:flex; flex-direction:column; gap:6px; background:rgba(0,0,0,.14); border-right:1px solid rgba(255,255,255,.08); }
+.sidebar-logo{ height:40px; width:auto; border-radius:8px; background:#fff; padding:8px 12px; margin:2px 2px 18px; align-self:flex-start; }
+.tab-btn{ display:block; width:100%; text-align:left; background:transparent; border:none; color:#b9c6dc; padding:11px 14px; border-radius:9px; cursor:pointer; font-size:13px; font-weight:600; font-family:inherit; transition:background .12s, color .12s; }
+.tab-btn:hover{ background:rgba(255,255,255,.06); color:#fff; }
+.tab-btn.active{ background:rgba(255,255,255,.12); color:#fff; }
+.app-main{ flex:1; min-width:0; }
+.tab-page{ display:none; }
+.tab-page.active{ display:block; }
+@media (max-width:900px){
+  .app-shell{ flex-direction:column; }
+  .sidebar{ width:100%; flex-direction:row; align-items:center; gap:4px; padding:10px 12px; overflow-x:auto; border-right:none; border-bottom:1px solid rgba(255,255,255,.08); }
+  .sidebar-logo{ height:32px; margin:0 10px 0 0; padding:6px 9px; }
+  .tab-btn{ width:auto; white-space:nowrap; padding:9px 13px; }
+}
+
 /* header */
 .header{ display:flex; align-items:center; justify-content:space-between; gap:20px; padding:6px 4px 20px; flex-wrap:wrap; }
 .header-left{ display:flex; align-items:center; gap:16px; }
@@ -541,6 +558,107 @@ equip_disp_card = f"""
 """
 
 # ---------------------------------------------------------------------------
+# ABA "Ocupação da Frota" - Valor de Aquisição
+# ---------------------------------------------------------------------------
+af = D["ativo_fixo"]
+af_tipos = D["ativo_fixo_tipos"]
+
+af_alerta = ""
+if af["sem_registro_qtd"] > 0:
+    af_alerta = f"""
+<div class="alert-item critical" style="margin-bottom:18px;">
+  <span class="alert-icon">🔴</span>
+  <div><b>Cobertura de dados patrimoniais:</b> {af['sem_registro_qtd']} de {fmt_int(af['total_maquinas'])} equipamentos
+  ({pct(af['sem_registro_pct'])} da frota) sem valor de compra registrado na planilha de Ativo Fixo — entram nas
+  contagens acima mas com valor R$ 0,00. Nº de série: {', '.join(af['sem_registro_lista'])}.</div>
+</div>
+"""
+
+af_rows = []
+for t in sorted(af_tipos, key=lambda x: x["total"], reverse=True):
+    af_rows.append(f"""<tr>
+      <td>{t['tipo']}</td>
+      <td>{fmt_int(t['total'])}</td>
+      <td>{fmt_int(t['disponivel'])}</td>
+      <td>{fmt_int(t['contrato'])}</td>
+      <td>{fmt_int(t['manutencao'])}</td>
+      <td>{brl(t['valor'], 2)}</td>
+    </tr>""")
+
+af_page = f"""
+<div class="wrap">
+  <div class="header">
+    <div class="header-left">
+      <img class="logo" src="data:image/png;base64,{LOGO_B64}" alt="Eleva Brasil" style="height:56px" />
+      <div class="title-block">
+        <h1>Ocupação da Frota — Valor de Aquisição</h1>
+        <div class="sub">Eleva Brasil</div>
+      </div>
+    </div>
+    <div class="header-right">
+      Atualizado em <b>{af['gerado_em']}</b><br/>
+      Fonte: Status ao vivo (API LOC1) + Valor de Compra (planilha Ativo Fixo)
+    </div>
+  </div>
+
+  {af_alerta}
+
+  <div class="section-title"><h2>Frota por Status</h2><span class="hint">Contagem ao vivo (API) &middot; valor de aquisição por status</span></div>
+  <div class="grid grid-3">
+    <div class="card">
+      <h3>Disponível</h3>
+      <div class="kpi-row"><span class="kpi-value" style="color:var(--neutral)">{fmt_int(af['disponivel_n'])}</span></div>
+      <div class="kpi-sub">{pct(af['disponivel_pct'])} da frota &middot; {brl(af['disponivel_v'], 2)}</div>
+    </div>
+    <div class="card">
+      <h3>Em Contrato</h3>
+      <div class="kpi-row"><span class="kpi-value" style="color:var(--good)">{fmt_int(af['contrato_n'])}</span></div>
+      <div class="kpi-sub">{pct(af['contrato_pct'])} da frota &middot; {brl(af['contrato_v'], 2)}</div>
+    </div>
+    <div class="card">
+      <h3>Em Manutenção</h3>
+      <div class="kpi-row"><span class="kpi-value" style="color:var(--critical)">{fmt_int(af['manutencao_n'])}</span></div>
+      <div class="kpi-sub">{pct(af['manutencao_pct'])} da frota &middot; {brl(af['manutencao_v'], 2)}</div>
+    </div>
+  </div>
+
+  <div class="grid grid-3" style="margin-top:14px;">
+    <div class="card">
+      <h3>Ocupação Física</h3>
+      <div class="kpi-row"><span class="kpi-value">{pct(af['ocupacao_fisica_pct'])}</span></div>
+      <div class="kpi-sub">Qtd. em contrato &divide; Total de máquinas</div>
+    </div>
+    <div class="card">
+      <h3>Ocupação Financeira</h3>
+      <div class="kpi-row"><span class="kpi-value">{pct(af['ocupacao_financeira_pct'])}</span></div>
+      <div class="kpi-sub">Valor em contrato &divide; Valor total da frota</div>
+    </div>
+    <div class="card">
+      <h3>Frota Total</h3>
+      <div class="kpi-row"><span class="kpi-value">{fmt_int(af['total_maquinas'])}</span></div>
+      <div class="kpi-sub">{brl(af['total_valor'], 2)}</div>
+    </div>
+  </div>
+
+  <div class="section-title"><h2>Por Tipo de Equipamento</h2><span class="hint">Ordenado por total de equipamentos</span></div>
+  <div class="table-card">
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr>
+          <th>Tipo</th><th>Total</th><th>Disponível</th><th>Em Contrato</th><th>Em Manutenção</th><th>Valor Aquisição</th>
+        </tr></thead>
+        <tbody>{''.join(af_rows)}</tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">
+    Dashboard de Ocupação da Frota &middot; Eleva Brasil &middot; métrica principal: Valor de Compra (Ativo Fixo) &middot; status/contagem ao vivo via API LOC1, valor atualizado quando a planilha de Ativo Fixo for reenviada.
+  </div>
+</div>
+"""
+
+# ---------------------------------------------------------------------------
 # Alertas
 # ---------------------------------------------------------------------------
 icon_map = {"critical": "🔴", "warning": "🟡", "good": "🟢"}
@@ -598,6 +716,17 @@ JS = """
   }
   wireChart('revChart', 'chartTooltip');
   wireChart('yoyChart', 'yoyTooltip');
+
+  var tabBtns = document.querySelectorAll('.tab-btn');
+  tabBtns.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var target = btn.getAttribute('data-tab');
+      tabBtns.forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      document.querySelectorAll('.tab-page').forEach(function(p){ p.classList.remove('active'); });
+      document.getElementById('tab-' + target).classList.add('active');
+    });
+  });
 })();
 </script>
 """
@@ -612,35 +741,52 @@ html = f"""<!doctype html>
 <style>{CSS}</style>
 </head>
 <body>
-<div class="wrap">
-  {header_html}
+<div class="app-shell">
+  <nav class="sidebar">
+    <img class="sidebar-logo" src="data:image/png;base64,{LOGO_B64}" alt="Eleva Brasil" />
+    <button class="tab-btn active" data-tab="exec">Visão Executiva</button>
+    <button class="tab-btn" data-tab="af">Ocupação da Frota</button>
+  </nav>
+  <div class="app-main">
 
-  <div class="section-title"><h2>Frota</h2><span class="hint">Situação atual dos equipamentos</span></div>
-  {kpi_frota}
+    <div id="tab-exec" class="tab-page active">
+      <div class="wrap">
+        {header_html}
 
-  <div class="section-title"><h2>Faturamento</h2><span class="hint">Valores líquidos, salvo indicação em contrário</span></div>
-  {kpi_fat}
+        <div class="section-title"><h2>Frota</h2><span class="hint">Situação atual dos equipamentos</span></div>
+        {kpi_frota}
 
-  <div class="section-title"><h2>Potencial de Faturamento</h2><span class="hint">Onde está o dinheiro da frota, por status</span></div>
-  {kpi_pot}
+        <div class="section-title"><h2>Faturamento</h2><span class="hint">Valores líquidos, salvo indicação em contrário</span></div>
+        {kpi_fat}
 
-  <div class="grid grid-2" style="margin-top:14px; align-items:start;">
-    {chart_card}
-    {occ_table_card}
-  </div>
+        <div class="section-title"><h2>Potencial de Faturamento</h2><span class="hint">Onde está o dinheiro da frota, por status</span></div>
+        {kpi_pot}
 
-  <div class="section-title"><h2>Comparativo Anual</h2><span class="hint">Momento atual x mesmo momento do ano passado</span></div>
-  <div style="margin-top:4px;">
-    {yoy_card}
-  </div>
+        <div class="grid grid-2" style="margin-top:14px; align-items:start;">
+          {chart_card}
+          {occ_table_card}
+        </div>
 
-  <div class="grid grid-2" style="margin-top:14px; align-items:start;">
-    {modelos_table_card}
-    {equip_disp_card}
-  </div>
+        <div class="section-title"><h2>Comparativo Anual</h2><span class="hint">Momento atual x mesmo momento do ano passado</span></div>
+        <div style="margin-top:4px;">
+          {yoy_card}
+        </div>
 
-  <div class="footer">
-    Dashboard Gerencial de Operações &middot; Eleva Brasil &middot; gerado automaticamente a partir da API da LOC1 (Faturamento, Status de Máquinas e Taxa de Ocupação) &middot; corte de dados: {fat['corte_label']}
+        <div class="grid grid-2" style="margin-top:14px; align-items:start;">
+          {modelos_table_card}
+          {equip_disp_card}
+        </div>
+
+        <div class="footer">
+          Dashboard Gerencial de Operações &middot; Eleva Brasil &middot; gerado automaticamente a partir da API da LOC1 (Faturamento, Status de Máquinas e Taxa de Ocupação) &middot; corte de dados: {fat['corte_label']}
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-af" class="tab-page">
+      {af_page}
+    </div>
+
   </div>
 </div>
 {JS}

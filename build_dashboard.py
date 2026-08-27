@@ -230,6 +230,68 @@ for _, r in disponiveis_df.iterrows():
     })
 
 # ---------------------------------------------------------------------------
+# 3c) VALOR DE AQUISIÇÃO / OCUPAÇÃO FINANCEIRA DA FROTA
+#    Status/contagem vêm ao vivo da API (mesma fonte da Frota, seção 3);
+#    o Valor de Compra vem de valor_aquisicao_mapping.csv (planilha "Ativo
+#    Fixo" enviada manualmente, processada localmente por
+#    update_ativo_fixo_manual.py - só tem código de equipamento e valor,
+#    sem dado de cliente, por isso pode ficar no repositório público).
+# ---------------------------------------------------------------------------
+valores_af = pd.read_csv(BASE / "valor_aquisicao_mapping.csv", dtype={"Nº do item": str, "Nº de série": str})
+status_af = status.merge(valores_af, on=["Nº do item", "Nº de série"], how="left")
+status_af["Valor de Compra"] = status_af["Valor de Compra"].fillna(0.0)
+
+sem_registro = status_af[status_af["Valor de Compra"] <= 0]
+
+af_por_status = status_af.groupby("Status")["Valor de Compra"].agg(["count", "sum"])
+
+
+def _af_status(nome):
+    if nome in af_por_status.index:
+        return int(af_por_status.loc[nome, "count"]), float(af_por_status.loc[nome, "sum"])
+    return 0, 0.0
+
+af_disp_n, af_disp_v = _af_status("Disponivel")
+af_contr_n, af_contr_v = _af_status("Em Contrato")
+af_manut_n, af_manut_v = _af_status("Em Manutenção")
+af_total_n = len(status_af)
+af_total_v = float(status_af["Valor de Compra"].sum())
+
+ativo_fixo = {
+    "gerado_em": AGORA_BR.strftime("%d/%m/%Y %H:%M"),
+    "total_maquinas": af_total_n,
+    "total_valor": af_total_v,
+    "disponivel_n": af_disp_n, "disponivel_pct": af_disp_n / af_total_n * 100 if af_total_n else 0, "disponivel_v": af_disp_v,
+    "contrato_n": af_contr_n, "contrato_pct": af_contr_n / af_total_n * 100 if af_total_n else 0, "contrato_v": af_contr_v,
+    "manutencao_n": af_manut_n, "manutencao_pct": af_manut_n / af_total_n * 100 if af_total_n else 0, "manutencao_v": af_manut_v,
+    "ocupacao_fisica_pct": af_contr_n / af_total_n * 100 if af_total_n else 0,
+    "ocupacao_financeira_pct": af_contr_v / af_total_v * 100 if af_total_v else 0,
+    "sem_registro_qtd": len(sem_registro),
+    "sem_registro_pct": len(sem_registro) / af_total_n * 100 if af_total_n else 0,
+    "sem_registro_lista": sorted(sem_registro["Nº de série"].tolist()),
+}
+
+af_piv = status_af.pivot_table(index="Tipo do Modelo", columns="Status", values="Nº do item", aggfunc="count", fill_value=0)
+for col in ["Disponivel", "Em Contrato", "Em Manutenção"]:
+    if col not in af_piv.columns:
+        af_piv[col] = 0
+af_valor_tipo = status_af.groupby("Tipo do Modelo")["Valor de Compra"].sum()
+af_piv["Valor"] = af_valor_tipo
+af_piv["Total"] = af_piv["Disponivel"] + af_piv["Em Contrato"] + af_piv["Em Manutenção"]
+af_piv = af_piv.reset_index().sort_values("Total", ascending=False)
+
+ativo_fixo_tipos = []
+for _, r in af_piv.iterrows():
+    ativo_fixo_tipos.append({
+        "tipo": r["Tipo do Modelo"],
+        "total": int(r["Total"]),
+        "disponivel": int(r["Disponivel"]),
+        "contrato": int(r["Em Contrato"]),
+        "manutencao": int(r["Em Manutenção"]),
+        "valor": float(r["Valor"]),
+    })
+
+# ---------------------------------------------------------------------------
 # 4) TAXA DE OCUPAÇÃO / RECEITA POR TIPO DO MODELO (Taxa de Ocupação...xlsx)
 # ---------------------------------------------------------------------------
 occ_sorted = occ.sort_values("Total de Equipamentos", ascending=False)
@@ -311,6 +373,8 @@ data = {
     "equipamentos_disponiveis": equipamentos_disponiveis,
     "tipos_tabela": tipos_tabela,
     "potencial": potencial,
+    "ativo_fixo": ativo_fixo,
+    "ativo_fixo_tipos": ativo_fixo_tipos,
     "faturamento": faturamento,
     "serie_mensal": serie_json,
     "comparativo_anual": comparativo_anual,
