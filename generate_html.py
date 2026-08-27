@@ -94,7 +94,13 @@ body{
 /* app shell / sidebar de navegação */
 .app-shell{ display:flex; align-items:flex-stretch; min-height:100vh; }
 .sidebar{ width:216px; flex-shrink:0; padding:22px 14px; display:flex; flex-direction:column; gap:6px; background:rgba(0,0,0,.14); border-right:1px solid rgba(255,255,255,.08); }
-.sidebar-logo{ height:40px; width:auto; border-radius:8px; background:#fff; padding:8px 12px; margin:2px 2px 18px; align-self:flex-start; }
+.sidebar-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin:2px 2px 18px; }
+.sidebar-logo{ height:40px; width:auto; border-radius:8px; background:#fff; padding:8px 12px; }
+.sidebar-toggle{ background:rgba(255,255,255,.08); border:none; color:#b9c6dc; width:26px; height:26px; flex-shrink:0; border-radius:7px; cursor:pointer; font-size:14px; line-height:1; display:flex; align-items:center; justify-content:center; transition:background .12s, color .12s; }
+.sidebar-toggle:hover{ background:rgba(255,255,255,.18); color:#fff; }
+.sidebar-toggle-open{ position:fixed; top:20px; left:16px; z-index:30; display:none; }
+.app-shell.sidebar-collapsed .sidebar{ display:none; }
+.app-shell.sidebar-collapsed .sidebar-toggle-open{ display:flex; }
 .tab-btn{ display:block; width:100%; text-align:left; background:transparent; border:none; color:#b9c6dc; padding:11px 14px; border-radius:9px; cursor:pointer; font-size:13px; font-weight:600; font-family:inherit; transition:background .12s, color .12s; }
 .tab-btn:hover{ background:rgba(255,255,255,.06); color:#fff; }
 .tab-btn.active{ background:rgba(255,255,255,.12); color:#fff; }
@@ -104,7 +110,9 @@ body{
 @media (max-width:900px){
   .app-shell{ flex-direction:column; }
   .sidebar{ width:100%; flex-direction:row; align-items:center; gap:4px; padding:10px 12px; overflow-x:auto; border-right:none; border-bottom:1px solid rgba(255,255,255,.08); }
-  .sidebar-logo{ height:32px; margin:0 10px 0 0; padding:6px 9px; }
+  .sidebar-top{ margin:0 10px 0 0; }
+  .sidebar-logo{ height:32px; padding:6px 9px; }
+  .sidebar-toggle, .sidebar-toggle-open{ display:none !important; }
   .tab-btn{ width:auto; white-space:nowrap; padding:9px 13px; }
 }
 
@@ -595,7 +603,7 @@ af_page = f"""
 <div class="wrap">
   <div class="header">
     <div class="header-left">
-      <img class="logo" src="data:image/png;base64,{LOGO_B64}" alt="Eleva Brasil" style="height:56px" />
+      <img class="logo" src="data:image/png;base64,{LOGO_B64}" alt="Eleva Brasil" />
       <div class="title-block">
         <h1>Ocupação da Frota — Valor de Aquisição</h1>
         <div class="sub">Eleva Brasil</div>
@@ -733,6 +741,19 @@ JS = """
       document.getElementById('tab-' + target).classList.add('active');
     });
   });
+
+  var shell = document.querySelector('.app-shell');
+  var collapseBtn = document.getElementById('sidebarCollapse');
+  var expandBtn = document.getElementById('sidebarExpand');
+  function setCollapsed(collapsed){
+    shell.classList.toggle('sidebar-collapsed', collapsed);
+    try{ localStorage.setItem('eleva_sidebar_collapsed', collapsed ? '1' : '0'); }catch(e){}
+  }
+  if(collapseBtn) collapseBtn.addEventListener('click', function(){ setCollapsed(true); });
+  if(expandBtn) expandBtn.addEventListener('click', function(){ setCollapsed(false); });
+  try{
+    if(localStorage.getItem('eleva_sidebar_collapsed') === '1') setCollapsed(true);
+  }catch(e){}
 })();
 </script>
 """
@@ -748,11 +769,15 @@ html = f"""<!doctype html>
 </head>
 <body>
 <div class="app-shell">
-  <nav class="sidebar">
-    <img class="sidebar-logo" src="data:image/png;base64,{LOGO_B64}" alt="Eleva Brasil" />
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-top">
+      <img class="sidebar-logo" src="data:image/png;base64,{LOGO_B64}" alt="Eleva Brasil" />
+      <button class="sidebar-toggle" id="sidebarCollapse" title="Ocultar menu" aria-label="Ocultar menu">&laquo;</button>
+    </div>
     <button class="tab-btn active" data-tab="exec">Visão Executiva</button>
     <button class="tab-btn" data-tab="af">Ocupação da Frota</button>
   </nav>
+  <button class="sidebar-toggle sidebar-toggle-open" id="sidebarExpand" title="Mostrar menu" aria-label="Mostrar menu">&raquo;</button>
   <div class="app-main">
 
     <div id="tab-exec" class="tab-page active">
