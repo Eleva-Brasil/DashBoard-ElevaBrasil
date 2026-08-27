@@ -4,6 +4,7 @@ on:
   schedule:
     # A cada hora, das 08h as 19h no horario de Brasilia (GitHub Actions usa
     # UTC; Brasilia = UTC-3, sem horario de verao). 11h-22h UTC = 08h-19h BRT.
+    # (re-registrado em 27/08 - agendador parou de disparar apos a 1a edicao)
     - cron: "0 11-22 * * *"
   workflow_dispatch: {}   # permite rodar manualmente pela aba Actions, a qualquer hora
 
