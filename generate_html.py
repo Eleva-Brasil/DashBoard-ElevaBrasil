@@ -75,7 +75,8 @@ CSS = """
   --neutral:#2a78d6;
   --neutral-bg:#eaf2fc;
   --status-disp:#0ca30c;
-  --status-contr:#c98500;
+  --status-contr:#FFDE21;
+  --status-contr-text:#9c7a00;
   --status-manut:#d03b3b;
   --radius:14px;
   --shadow: 0 1px 2px rgba(10,20,40,0.06), 0 6px 20px rgba(10,20,40,0.10);
@@ -277,7 +278,7 @@ kpi_frota = f"""
   </div>
   <div class="card">
     <h3>Máquinas em Contrato</h3>
-    <div class="kpi-row"><span class="kpi-value" style="color:var(--status-contr)">{fmt_int(frota['contrato'])}</span><span class="kpi-unit">máq.</span></div>
+    <div class="kpi-row"><span class="kpi-value" style="color:var(--status-contr-text)">{fmt_int(frota['contrato'])}</span><span class="kpi-unit">máq.</span></div>
     <div class="kpi-sub">{pct(frota['contrato_pct'])} da frota</div>
   </div>
   <div class="card">
@@ -330,7 +331,7 @@ kpi_pot = f"""
 <div class="grid grid-3">
   <div class="card">
     <h3>Receita Ativa (Em Contrato)</h3>
-    <div class="kpi-value" style="color:var(--status-contr)">{brl_m(pot['receita_ativa'])}<span class="kpi-unit">/mês</span></div>
+    <div class="kpi-value" style="color:var(--status-contr-text)">{brl_m(pot['receita_ativa'])}<span class="kpi-unit">/mês</span></div>
     <div class="kpi-sub">{pct(pot['pct_ativa'])} do potencial mensal da frota</div>
   </div>
   <div class="card">
@@ -615,7 +616,7 @@ af_page = f"""
     </div>
     <div class="card">
       <h3>Em Contrato</h3>
-      <div class="kpi-row"><span class="kpi-value" style="color:var(--status-contr)">{fmt_int(af['contrato_n'])}</span></div>
+      <div class="kpi-row"><span class="kpi-value" style="color:var(--status-contr-text)">{fmt_int(af['contrato_n'])}</span></div>
       <div class="kpi-sub">{pct(af['contrato_pct'])} da frota &middot; {brl(af['contrato_v'], 2)}</div>
     </div>
     <div class="card">
