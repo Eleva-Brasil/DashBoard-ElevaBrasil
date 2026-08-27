@@ -35,9 +35,9 @@ def brl_m(v):
 
 
 def brl_m1(v):
-    """Versao compacta (1 casa decimal) pra rotulo em cima de barra, ex: R$ 5,3 M"""
+    """Versao compacta (1 casa decimal), tudo junto, pra rotulo em cima de barra: R$5,3M"""
     s = f"{v/1_000_000:,.1f}"
-    return "R$ " + s.replace(",", "§").replace(".", ",").replace("§", ".") + " M"
+    return "R$" + s.replace(",", "§").replace(".", ",").replace("§", ".") + "M"
 
 
 def pct(v, casas=1):
