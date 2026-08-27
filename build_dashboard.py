@@ -64,42 +64,36 @@ def pct(v, casas=1):
 
 
 # ---------------------------------------------------------------------------
-# 1) CARGA DOS DADOS - API da LOC1 por padrão; LOC1_SOURCE=xlsx volta a ler
-#    as 3 planilhas locais (útil para comparação/depuração).
+# 1) CARGA DOS DADOS
+#    LOC1_SOURCE=api (padrão): Frota/Ocupação vêm da API.
+#    LOC1_SOURCE=xlsx: as 3 planilhas locais (comparação/depuração).
+#    FATURAMENTO_SOURCE=manual (padrão por enquanto): Faturamento vem de
+#    faturamento_manual.json (números já agregados, gerados localmente por
+#    update_faturamento_manual.py a partir da planilha real - a planilha em
+#    si nunca é lida aqui nem commitada). FATURAMENTO_SOURCE=xlsx le a
+#    planilha direto (só funciona rodando localmente). FATURAMENTO_SOURCE=api
+#    usa a API da LOC1 (ainda superestima - ver alerta).
 # ---------------------------------------------------------------------------
 import os
 
+from faturamento_lib import compute_faturamento
+
 quality_notes = []  # cada item: {icon, title, detail}
 FONTE_DADOS = os.environ.get("LOC1_SOURCE", "api").lower()
+FONTE_FATURAMENTO = os.environ.get("FATURAMENTO_SOURCE", "manual").lower()
 
 if FONTE_DADOS == "api":
-    from loc1_extract import get_client, get_status_df, get_occupancy_df, get_faturamento_df
+    from loc1_extract import get_client, get_status_df, get_occupancy_df
 
     _client = get_client()
     status = get_status_df(_client)
     occ = get_occupancy_df(status)
-    fat = get_faturamento_df(_client, since=os.environ.get("LOC1_FATURAMENTO_DESDE", "2025-01-01"))
-
-    quality_notes.append({
-        "icon": "🔴",
-        "title": "FATURAMENTO SUPERESTIMADO — API não filtra notas canceladas",
-        "detail": "A API da LOC1 não expõe o campo de cancelamento (\"CANCELED\") no endpoint de notas fiscais, então "
-                  "os cards de Faturamento deste painel somam notas canceladas junto com as válidas. Validado com dados "
-                  "reais: o valor mostrado fica superestimado em cerca de 30-40% acima do faturamento líquido real. "
-                  "NÃO usar os números de Faturamento deste painel para decisão ou apresentação até esse campo ser "
-                  "liberado pela LOC1 — os cards de Frota, Status de Máquinas e Taxa de Ocupação não são afetados "
-                  "por esse problema."
-    })
     quality_notes.append({
         "icon": "🟡",
-        "title": "Dados conectados via API da LOC1 (não mais planilha manual)",
-        "detail": "Esta versão lê direto da API da LOC1 em vez das 3 planilhas .xlsx. Ressalva adicional: \"Desconto\" "
-                  "e \"IRF\" ainda não vêm da API e aparecem como zero (\"Total Documento\" é aproximado como igual a "
-                  "\"Total Faturado\"). \"Total Faturado\" e \"Data Faturamento\" por nota individual estão corretos "
-                  "(validado nota a nota) — o problema é só a inclusão de notas canceladas, tratado no alerta acima."
+        "title": "Frota e Ocupação conectadas via API da LOC1 (não mais planilha manual)",
+        "detail": "Esta versão lê Status de Máquinas e Taxa de Ocupação direto da API da LOC1."
     })
 else:
-    fat = pd.read_excel(FAT_FILE)
     status = pd.read_excel(STATUS_FILE)
     occ = pd.read_excel(OCC_FILE)
     # A planilha .xlsx usa nomes de coluna abreviados mais antigos; o restante
@@ -111,77 +105,47 @@ else:
         "Rec. Disp.": "Receita Disponível", "Rec. Contr.": "Receita Em Contrato", "Rec. Manut.": "Receita Em Manutenção",
     })
 
+# --- Faturamento: separado da Frota/Ocupação acima (fonte independente) ---
+if FONTE_FATURAMENTO == "manual":
+    with open(BASE / "faturamento_manual.json", encoding="utf-8") as f:
+        FAT_BUNDLE = json.load(f)
+    quality_notes.append({
+        "icon": "🟡",
+        "title": "Faturamento vem de planilha manual (modo híbrido)",
+        "detail": "Frota e Taxa de Ocupação são atualizadas automaticamente pela API da LOC1. O Faturamento, "
+                  "porém, vem de uma planilha enviada manualmente e processada à parte — a API não filtra notas "
+                  "canceladas corretamente (ver histórico do projeto). Os valores de Faturamento só atualizam "
+                  "quando uma planilha nova for enviada e reprocessada."
+    })
+elif FONTE_FATURAMENTO == "xlsx":
+    FAT_BUNDLE = compute_faturamento(pd.read_excel(FAT_FILE), pd.Timestamp.now().normalize())
+else:
+    from loc1_extract import get_client as _get_client, get_faturamento_df
+    _fclient = _get_client()
+    fat_api = get_faturamento_df(_fclient, since=os.environ.get("LOC1_FATURAMENTO_DESDE", "2025-01-01"))
+    FAT_BUNDLE = compute_faturamento(fat_api, pd.Timestamp.now().normalize())
+    quality_notes.append({
+        "icon": "🔴",
+        "title": "FATURAMENTO SUPERESTIMADO — API não filtra notas canceladas",
+        "detail": "A API da LOC1 não expõe o campo de cancelamento (\"CANCELED\") no endpoint de notas fiscais, então "
+                  "os cards de Faturamento deste painel somam notas canceladas junto com as válidas. Validado com dados "
+                  "reais: o valor mostrado fica superestimado em cerca de 30-40% acima do faturamento líquido real. "
+                  "NÃO usar os números de Faturamento deste painel para decisão ou apresentação até esse campo ser "
+                  "liberado pela LOC1 — os cards de Frota, Status de Máquinas e Taxa de Ocupação não são afetados "
+                  "por esse problema."
+    })
+
+quality_notes.extend(FAT_BUNDLE["quality_notes"])
+faturamento = FAT_BUNDLE["faturamento"]
+serie_json = FAT_BUNDLE["serie_mensal"]
+comparativo_anual = FAT_BUNDLE["comparativo_anual"]
+alertas_faturamento = FAT_BUNDLE["alertas"]
+HOJE = pd.Timestamp(FAT_BUNDLE["hoje_efetivo"])
+
 # ---------------------------------------------------------------------------
-# 2) QUALIDADE DOS DADOS - checagens (antes de calcular os KPIs)
+# 2) QUALIDADE DOS DADOS - checagens adicionais (as de Faturamento já vieram
+#    de FAT_BUNDLE["quality_notes"], calculadas em faturamento_lib.py)
 # ---------------------------------------------------------------------------
-fat["Data Faturamento"] = pd.to_datetime(fat["Data Faturamento"])
-
-# Nunca deixar "hoje" apontar para um dia à frente do último lançamento real
-# (protege execuções automáticas contra planilha desatualizada / relógio adiantado).
-HOJE = min(HOJE, fat["Data Faturamento"].max().normalize())
-
-# a) lote de migração / abertura em 31/05/2024
-migracao = fat[fat["Data Faturamento"] == pd.Timestamp("2024-05-31")]
-if len(migracao) > 0:
-    quality_notes.append({
-        "icon": "🟡",
-        "title": "Lote de abertura/migração em 31/05/2024",
-        "detail": f"{len(migracao)} lançamentos de Faturamento estão todos datados em 31/05/2024 e sem o campo \"Tipo\" preenchido "
-                  f"(total líquido de {brl(migracao['Total Faturado'].sum())}), consistente com uma carga inicial de saldos no SAP B1 e não com faturamento diário real. "
-                  f"Para não distorcer a evolução mensal, este dia foi excluído do gráfico de evolução e das médias mensais (mantido apenas no acumulado geral da base)."
-    })
-
-# b) linhas sem Tipo preenchido (fora a migração)
-sem_tipo = fat[fat["Tipo"].isna() & (fat["Data Faturamento"] != pd.Timestamp("2024-05-31"))]
-if len(sem_tipo) > 0:
-    quality_notes.append({
-        "icon": "🟡",
-        "title": "Documentos sem classificação de \"Tipo\"",
-        "detail": f"{len(sem_tipo)} lançamentos de Faturamento (fora o lote de 31/05/2024) não têm o campo \"Tipo\" preenchido "
-                  f"(ex.: Fatura, NFse Serviço, NF de débito). Foram mantidos no cálculo de faturamento líquido, mas recomendamos "
-                  f"validar com o financeiro se representam estornos/ajustes manuais."
-    })
-
-# c) valores líquidos negativos (estornos)
-negativos = fat[fat["Total Faturado"] < 0]
-if len(negativos) > 0:
-    quality_notes.append({
-        "icon": "🟡",
-        "title": "Lançamentos com Faturamento Líquido negativo",
-        "detail": f"{len(negativos)} registros têm \"Total Faturado\" negativo, somando {brl(negativos['Total Faturado'].sum())} "
-                  f"(prováveis estornos/notas de crédito). Estão incluídos nos totais líquidos apresentados."
-    })
-
-# d) inconsistência Documento - Desconto - IRF != Total Faturado
-calc = fat["Total Documento"] - fat["Desconto"] - fat["IRF"]
-mismatch = fat[(calc - fat["Total Faturado"]).abs() > 0.02]
-if len(mismatch) > 0:
-    quality_notes.append({
-        "icon": "🟡",
-        "title": "Diferença entre \"Total Documento - Desconto - IRF\" e \"Total Faturado\"",
-        "detail": f"{len(mismatch)} registros ({len(mismatch)/len(fat)*100:.1f}% da base de Faturamento) têm essa conta divergente "
-                  f"(inclui casos de \"Total Documento\" = 0 com \"Total Faturado\" preenchido). O painel usa sempre o campo "
-                  f"\"Total Faturado\" (líquido) da própria planilha como fonte oficial, sem recalcular."
-    })
-
-# e) CNPJ/CPF ausente
-sem_doc = fat["CNPJ/ CPF"].isna().sum()
-if sem_doc > 0:
-    quality_notes.append({
-        "icon": "🟡",
-        "title": "CNPJ/CPF não preenchido",
-        "detail": f"{sem_doc} lançamentos de Faturamento não têm CNPJ/CPF do cliente preenchido. Não afeta os totais financeiros."
-    })
-
-# f) N NF duplicado
-dup_nf = fat["N NF"].duplicated().sum()
-if dup_nf > 0:
-    quality_notes.append({
-        "icon": "🟡",
-        "title": "Número de NF repetido",
-        "detail": f"{dup_nf} registros compartilham o mesmo \"N NF\" com outro lançamento. Pode ser normal (parcelas/itens da mesma nota) "
-                  f"mas vale checagem pontual se for usado como chave única."
-    })
 
 # g) planilhas de Contas a Pagar / Compras ainda não fornecidas
 quality_notes.append({
@@ -301,127 +265,21 @@ potencial = {
 }
 
 # ---------------------------------------------------------------------------
-# 5) FATURAMENTO (Faturamento Eleva Brasil.xlsx)
+# 5) FATURAMENTO e 5b) COMPARATIVO ANUAL já vieram prontos de FAT_BUNDLE
+#    (calculados em faturamento_lib.py, ver seção 1 acima).
 # ---------------------------------------------------------------------------
-fat_sem_migracao = fat[fat["Data Faturamento"] != pd.Timestamp("2024-05-31")]
-
-
-def liquido(mask_df):
-    return float(mask_df["Total Faturado"].sum())
-
-
-def bruto(mask_df):
-    return float(mask_df["Total Documento"].sum())
-
-
-ano_atual, mes_atual, dia_atual = HOJE.year, HOJE.month, HOJE.day
-
-ytd_atual = fat[(fat["Data Faturamento"] >= pd.Timestamp(f"{ano_atual}-01-01")) & (fat["Data Faturamento"] <= HOJE)]
-ytd_ant = fat[(fat["Data Faturamento"] >= pd.Timestamp(f"{ano_atual-1}-01-01")) & (fat["Data Faturamento"] <= HOJE.replace(year=ano_atual - 1))]
-
-mtd_atual = fat[(fat["Data Faturamento"] >= pd.Timestamp(year=ano_atual, month=mes_atual, day=1)) & (fat["Data Faturamento"] <= HOJE)]
-mtd_ant = fat[(fat["Data Faturamento"] >= pd.Timestamp(year=ano_atual - 1, month=mes_atual, day=1)) & (fat["Data Faturamento"] <= HOJE.replace(year=ano_atual - 1))]
-
-mes_fechado_num = mes_atual - 1 if mes_atual > 1 else 12
-mes_fechado_ano = ano_atual if mes_atual > 1 else ano_atual - 1
-ini_fechado = pd.Timestamp(year=mes_fechado_ano, month=mes_fechado_num, day=1)
-fim_fechado = (ini_fechado + pd.offsets.MonthEnd(0))
-mes_fechado_atual = fat[(fat["Data Faturamento"] >= ini_fechado) & (fat["Data Faturamento"] <= fim_fechado)]
-ini_fechado_ant = ini_fechado.replace(year=ini_fechado.year - 1)
-fim_fechado_ant = (ini_fechado_ant + pd.offsets.MonthEnd(0))
-mes_fechado_ant = fat[(fat["Data Faturamento"] >= ini_fechado_ant) & (fat["Data Faturamento"] <= fim_fechado_ant)]
-
-liq_ytd_atual, liq_ytd_ant = liquido(ytd_atual), liquido(ytd_ant)
-liq_mtd_atual, liq_mtd_ant = liquido(mtd_atual), liquido(mtd_ant)
-liq_fechado_atual, liq_fechado_ant = liquido(mes_fechado_atual), liquido(mes_fechado_ant)
-
-MESES_PT = ["", "jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"]
-
-faturamento = {
-    "ytd_liquido": liq_ytd_atual,
-    "ytd_liquido_ant": liq_ytd_ant,
-    "ytd_var_pct": (liq_ytd_atual / liq_ytd_ant - 1) * 100 if liq_ytd_ant else None,
-    "ytd_bruto": bruto(ytd_atual),
-    "ytd_deducoes": bruto(ytd_atual) - liq_ytd_atual,
-    "mtd_liquido": liq_mtd_atual,
-    "mtd_liquido_ant": liq_mtd_ant,
-    "mtd_var_pct": (liq_mtd_atual / liq_mtd_ant - 1) * 100 if liq_mtd_ant else None,
-    "mes_fechado_label": f"{MESES_PT[mes_fechado_num]}/{str(mes_fechado_ano)[2:]}",
-    "mes_fechado_liquido": liq_fechado_atual,
-    "mes_fechado_liquido_ant": liq_fechado_ant,
-    "mes_fechado_var_pct": (liq_fechado_atual / liq_fechado_ant - 1) * 100 if liq_fechado_ant else None,
-    "corte_label": HOJE.strftime("%d/%m/%Y"),
-}
-
-# série mensal (líquido) - exclui o lote de migração de 31/05/2024
-serie = fat_sem_migracao.copy()
-serie["ym"] = serie["Data Faturamento"].dt.to_period("M")
-serie_mensal = serie.groupby("ym")["Total Faturado"].sum().sort_index()
-# manter só os últimos 24 meses com dado
-serie_mensal = serie_mensal.tail(24)
-serie_json = [{"mes": str(idx), "valor": float(v)} for idx, v in serie_mensal.items()]
-
-# ---------------------------------------------------------------------------
-# 5b) COMPARATIVO ANUAL - ANO ATUAL x ANO ANTERIOR, mês a mês
-# ---------------------------------------------------------------------------
-# Mesma base (fat_sem_migracao), agrupada por (ano, mês), para comparar
-# "o momento atual" com "o mesmo momento do ano passado" - só até o mês
-# corrente do ano atual (meses futuros não existem, não são zero).
-serie_ano = fat_sem_migracao.copy()
-serie_ano["ano_"] = serie_ano["Data Faturamento"].dt.year
-serie_ano["mes_"] = serie_ano["Data Faturamento"].dt.month
-por_mes = serie_ano.groupby(["ano_", "mes_"])["Total Faturado"].sum()
-
-comparativo_meses = []
-for m in range(1, 13):
-    v_atual = float(por_mes.get((ano_atual, m), 0.0)) if m <= mes_atual else None
-    v_ant = float(por_mes.get((ano_atual - 1, m), 0.0))
-    comparativo_meses.append({
-        "mes": m,
-        "mes_label": MESES_PT[m],
-        "atual": v_atual,
-        "anterior": v_ant if (ano_atual - 1, m) in por_mes.index else None,
-    })
-
-total_ano_anterior_completo = float(por_mes.loc[ano_atual - 1].sum()) if (ano_atual - 1) in por_mes.index.get_level_values(0) else None
-dias_decorridos_ano = (HOJE - pd.Timestamp(f"{ano_atual}-01-01")).days + 1
-dias_no_ano = 366 if pd.Timestamp(f"{ano_atual}-12-31").is_leap_year else 365
-projecao_fechamento_ano = liq_ytd_atual / dias_decorridos_ano * dias_no_ano
-
-comparativo_anual = {
-    "ano_atual": ano_atual,
-    "ano_anterior": ano_atual - 1,
-    "meses": comparativo_meses,
-    "total_ano_anterior_completo": total_ano_anterior_completo,
-    "ytd_atual": liq_ytd_atual,
-    "ytd_anterior_mesmo_periodo": liq_ytd_ant,
-    "projecao_fechamento_ano": projecao_fechamento_ano,
-    "projecao_vs_ano_anterior_pct": (projecao_fechamento_ano / total_ano_anterior_completo - 1) * 100 if total_ano_anterior_completo else None,
-}
+ano_atual = HOJE.year
 
 # ---------------------------------------------------------------------------
 # 6) ALERTAS GERENCIAIS (derivados dos dados, sem inventar)
 # ---------------------------------------------------------------------------
-alertas = []
+alertas = list(alertas_faturamento)
 
 if frota["manutencao_pct"] >= 30:
     alertas.append({
         "nivel": "critical",
         "texto": f"{frota['manutencao']} máquinas em manutenção — {pct(frota['manutencao_pct'])} da frota parada, "
                  f"equivalente a {brl_m(potencial['receita_perdida_manut'])}/mês em receita potencial não capturada."
-    })
-
-if faturamento["ytd_var_pct"] is not None and faturamento["ytd_var_pct"] <= -5:
-    alertas.append({
-        "nivel": "warning",
-        "texto": f"Faturamento líquido acumulado no ano caiu {pct(abs(faturamento['ytd_var_pct']))} vs. mesmo período de {ano_atual-1} "
-                 f"({brl_m(faturamento['ytd_liquido'])} vs {brl_m(faturamento['ytd_liquido_ant'])})."
-    })
-
-if faturamento["mes_fechado_var_pct"] is not None and faturamento["mes_fechado_var_pct"] <= -5:
-    alertas.append({
-        "nivel": "warning",
-        "texto": f"Faturamento de {faturamento['mes_fechado_label']} fechou {pct(abs(faturamento['mes_fechado_var_pct']))} abaixo do mesmo mês do ano anterior."
     })
 
 if potencial["pct_parada"] >= 10:
