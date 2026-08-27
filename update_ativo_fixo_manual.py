@@ -20,12 +20,31 @@ BASE = Path(__file__).parent
 OUT_FILE = BASE / "valor_aquisicao_mapping.csv"
 
 
+def parse_valor(v):
+    """A planilha normalmente traz número puro (ex: 27360), mas algumas linhas
+    vêm como texto tipo "R$ 538,572,50" (R$ + vírgula em vez de ponto nos
+    milhares). Trata os dois casos: o último grupo separado por vírgula é
+    sempre a parte decimal (centavos), o resto é a parte inteira."""
+    if pd.isna(v):
+        return 0.0
+    if isinstance(v, (int, float)):
+        return float(v)
+    s = str(v).replace("R$", "").replace(" ", "").strip()
+    if "," in s:
+        partes = s.split(",")
+        s = "".join(partes[:-1]) + "." + partes[-1]
+    try:
+        return float(s)
+    except ValueError:
+        return 0.0
+
+
 def main():
     path = sys.argv[1] if len(sys.argv) > 1 else BASE / "Ativo Fixo.xlsx"
     df = pd.read_excel(path)
 
     out = df[["Nº do item", "AF", "Valor de Compra"]].rename(columns={"AF": "Nº de série"})
-    out["Valor de Compra"] = pd.to_numeric(out["Valor de Compra"], errors="coerce").fillna(0.0)
+    out["Valor de Compra"] = out["Valor de Compra"].apply(parse_valor)
     out = out.drop_duplicates(subset=["Nº do item", "Nº de série"])
 
     out.to_csv(OUT_FILE, index=False)
