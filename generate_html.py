@@ -74,6 +74,9 @@ CSS = """
   --critical-bg:#fdeaea;
   --neutral:#2a78d6;
   --neutral-bg:#eaf2fc;
+  --status-disp:#0ca30c;
+  --status-contr:#c98500;
+  --status-manut:#d03b3b;
   --radius:14px;
   --shadow: 0 1px 2px rgba(10,20,40,0.06), 0 6px 20px rgba(10,20,40,0.10);
 }
@@ -161,13 +164,13 @@ body{
 
 /* frota mix card */
 .mix-bar{ display:flex; height:14px; border-radius:8px; overflow:hidden; margin:10px 0 8px; }
-.mix-seg-disp{ background:var(--neutral); }
-.mix-seg-contr{ background:var(--good); }
-.mix-seg-manut{ background:var(--critical); }
+.mix-seg-disp{ background:var(--status-disp); }
+.mix-seg-contr{ background:var(--status-contr); }
+.mix-seg-manut{ background:var(--status-manut); }
 .mix-legend{ display:flex; gap:14px; font-size:12px; color:var(--ink-secondary); flex-wrap:wrap; }
 .mix-legend span{ display:inline-flex; align-items:center; gap:5px; }
 .dot{ width:9px; height:9px; border-radius:50%; display:inline-block; }
-.dot.disp{background:var(--neutral);} .dot.contr{background:var(--good);} .dot.manut{background:var(--critical);}
+.dot.disp{background:var(--status-disp);} .dot.contr{background:var(--status-contr);} .dot.manut{background:var(--status-manut);}
 
 /* tables */
 .table-card{ background:var(--card-bg); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 18px 8px; color:var(--ink-primary); }
@@ -269,17 +272,17 @@ kpi_frota = f"""
   </div>
   <div class="card">
     <h3>Máquinas Disponíveis</h3>
-    <div class="kpi-row"><span class="kpi-value" style="color:var(--neutral)">{fmt_int(frota['disponivel'])}</span><span class="kpi-unit">máq.</span></div>
+    <div class="kpi-row"><span class="kpi-value" style="color:var(--status-disp)">{fmt_int(frota['disponivel'])}</span><span class="kpi-unit">máq.</span></div>
     <div class="kpi-sub">{pct(frota['disponivel_pct'])} da frota</div>
   </div>
   <div class="card">
     <h3>Máquinas em Contrato</h3>
-    <div class="kpi-row"><span class="kpi-value" style="color:var(--good)">{fmt_int(frota['contrato'])}</span><span class="kpi-unit">máq.</span></div>
+    <div class="kpi-row"><span class="kpi-value" style="color:var(--status-contr)">{fmt_int(frota['contrato'])}</span><span class="kpi-unit">máq.</span></div>
     <div class="kpi-sub">{pct(frota['contrato_pct'])} da frota</div>
   </div>
   <div class="card">
     <h3>Máquinas em Manutenção</h3>
-    <div class="kpi-row"><span class="kpi-value" style="color:var(--critical)">{fmt_int(frota['manutencao'])}</span><span class="kpi-unit">máq.</span></div>
+    <div class="kpi-row"><span class="kpi-value" style="color:var(--status-manut)">{fmt_int(frota['manutencao'])}</span><span class="kpi-unit">máq.</span></div>
     <div class="kpi-sub">{pct(frota['manutencao_pct'])} da frota <span class="tag critical">crítico</span></div>
   </div>
   <div class="card">
@@ -327,17 +330,17 @@ kpi_pot = f"""
 <div class="grid grid-3">
   <div class="card">
     <h3>Receita Ativa (Em Contrato)</h3>
-    <div class="kpi-value" style="color:var(--good)">{brl_m(pot['receita_ativa'])}<span class="kpi-unit">/mês</span></div>
+    <div class="kpi-value" style="color:var(--status-contr)">{brl_m(pot['receita_ativa'])}<span class="kpi-unit">/mês</span></div>
     <div class="kpi-sub">{pct(pot['pct_ativa'])} do potencial mensal da frota</div>
   </div>
   <div class="card">
     <h3>Potencial Parado (Disponível)</h3>
-    <div class="kpi-value" style="color:var(--neutral)">{brl_m(pot['receita_parada'])}<span class="kpi-unit">/mês</span></div>
+    <div class="kpi-value" style="color:var(--status-disp)">{brl_m(pot['receita_parada'])}<span class="kpi-unit">/mês</span></div>
     <div class="kpi-sub">{pct(pot['pct_parada'])} do potencial mensal &middot; <span class="tag warning">capital parado</span></div>
   </div>
   <div class="card">
     <h3>Receita Perdida (Em Manutenção)</h3>
-    <div class="kpi-value" style="color:var(--critical)">{brl_m(pot['receita_perdida_manut'])}<span class="kpi-unit">/mês</span></div>
+    <div class="kpi-value" style="color:var(--status-manut)">{brl_m(pot['receita_perdida_manut'])}<span class="kpi-unit">/mês</span></div>
     <div class="kpi-sub">{pct(pot['pct_perdida_manut'])} do potencial mensal <span class="tag critical">maior gargalo</span></div>
   </div>
 </div>
@@ -475,9 +478,9 @@ for t in tipos:
       <div class="occ-name">{t['tipo']}</div>
       <div class="occ-total">{fmt_int(t['total'])} un.</div>
       <div class="occ-stack" title="Disponível {t['disp_pct']}% · Em Contrato {t['contrato_pct']}% · Manutenção {t['manut_pct']}%">
-        <div style="width:{t['disp_pct']}%; background:var(--neutral)"></div>
-        <div style="width:{t['contrato_pct']}%; background:var(--good)"></div>
-        <div style="width:{t['manut_pct']}%; background:var(--critical)"></div>
+        <div style="width:{t['disp_pct']}%; background:var(--status-disp)"></div>
+        <div style="width:{t['contrato_pct']}%; background:var(--status-contr)"></div>
+        <div style="width:{t['manut_pct']}%; background:var(--status-manut)"></div>
       </div>
       <div class="occ-pct">{pct(t['contrato_pct'])}</div>
     </div>""")
@@ -607,17 +610,17 @@ af_page = f"""
   <div class="grid grid-3">
     <div class="card">
       <h3>Disponível</h3>
-      <div class="kpi-row"><span class="kpi-value" style="color:var(--neutral)">{fmt_int(af['disponivel_n'])}</span></div>
+      <div class="kpi-row"><span class="kpi-value" style="color:var(--status-disp)">{fmt_int(af['disponivel_n'])}</span></div>
       <div class="kpi-sub">{pct(af['disponivel_pct'])} da frota &middot; {brl(af['disponivel_v'], 2)}</div>
     </div>
     <div class="card">
       <h3>Em Contrato</h3>
-      <div class="kpi-row"><span class="kpi-value" style="color:var(--good)">{fmt_int(af['contrato_n'])}</span></div>
+      <div class="kpi-row"><span class="kpi-value" style="color:var(--status-contr)">{fmt_int(af['contrato_n'])}</span></div>
       <div class="kpi-sub">{pct(af['contrato_pct'])} da frota &middot; {brl(af['contrato_v'], 2)}</div>
     </div>
     <div class="card">
       <h3>Em Manutenção</h3>
-      <div class="kpi-row"><span class="kpi-value" style="color:var(--critical)">{fmt_int(af['manutencao_n'])}</span></div>
+      <div class="kpi-row"><span class="kpi-value" style="color:var(--status-manut)">{fmt_int(af['manutencao_n'])}</span></div>
       <div class="kpi-sub">{pct(af['manutencao_pct'])} da frota &middot; {brl(af['manutencao_v'], 2)}</div>
     </div>
   </div>
