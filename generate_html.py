@@ -76,7 +76,7 @@ CSS = """
   --neutral-bg:#eaf2fc;
   --status-disp:#0ca30c;
   --status-contr:#FFDE21;
-  --status-contr-text:#9c7a00;
+  --status-contr-text:#FFDE21;
   --status-manut:#d03b3b;
   --radius:14px;
   --shadow: 0 1px 2px rgba(10,20,40,0.06), 0 6px 20px rgba(10,20,40,0.10);
