@@ -2,10 +2,12 @@ name: Atualizar Dashboard Eleva Brasil
 
 on:
   schedule:
-    # A cada hora, das 08h as 19h no horario de Brasilia (GitHub Actions usa
-    # UTC; Brasilia = UTC-3, sem horario de verao). 11h-22h UTC = 08h-19h BRT.
-    # (re-registrado em 27/08 - agendador parou de disparar apos a 1a edicao)
-    - cron: "0 11-22 * * *"
+    # A cada hora, 24h/dia. Voltou a ser sem restricao de horario porque o
+    # agendador do GitHub parou de disparar depois que a faixa 08h-19h foi
+    # adicionada (27/08) - suspeita de que a sintaxe de intervalo (11-22)
+    # tenha causado o problema. Se confirmar que roda estavel assim, dá pra
+    # tentar restringir de novo mais pra frente.
+    - cron: "0 * * * *"
   workflow_dispatch: {}   # permite rodar manualmente pela aba Actions, a qualquer hora
 
 permissions:
