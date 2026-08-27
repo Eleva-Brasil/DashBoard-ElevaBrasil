@@ -34,6 +34,12 @@ def brl_m(v):
     return "R$ " + s.replace(",", "§").replace(".", ",").replace("§", ".") + " M"
 
 
+def brl_m1(v):
+    """Versao compacta (1 casa decimal) pra rotulo em cima de barra, ex: R$ 5,3 M"""
+    s = f"{v/1_000_000:,.1f}"
+    return "R$ " + s.replace(",", "§").replace(".", ",").replace("§", ".") + " M"
+
+
 def pct(v, casas=1):
     s = f"{v:,.{casas}f}"
     return s.replace(".", ",") + "%"
@@ -215,6 +221,7 @@ tbody tr:hover{ background:#f7f9fc; }
 .chart-wrap{ position:relative; }
 .tooltip{ position:absolute; pointer-events:none; background:#0b1220; color:#fff; font-size:12px; padding:6px 9px; border-radius:8px; box-shadow:0 4px 14px rgba(0,0,0,.25); opacity:0; transform:translate(-50%,-110%); transition:opacity .08s; white-space:nowrap; z-index:5; }
 .axis-label{ font-size:10.5px; fill:var(--ink-muted); }
+.bar-value{ font-size:9px; font-weight:700; fill:var(--ink-primary); }
 
 /* alerts */
 .alert-list{ display:flex; flex-direction:column; gap:10px; }
@@ -441,6 +448,9 @@ for i, m in enumerate(comp_meses):
             f'<rect class="bar" x="{x_ant:.1f}" y="{y_ant:.1f}" width="{yoy_bar_w:.1f}" height="{max(h_ant,2):.1f}" rx="3" '
             f'fill="var(--ink-muted)" data-label="{m["mes_label"]}/{str(comp["ano_anterior"])[2:]}" data-value="{brl_m(m["anterior"])}"></rect>'
         )
+        yoy_bars.append(
+            f'<text class="bar-value" x="{x_ant+yoy_bar_w/2:.1f}" y="{max(y_ant-4, 10):.1f}" text-anchor="middle">{brl_m1(m["anterior"])}</text>'
+        )
     # barra ano atual (só até o mês corrente)
     if m["atual"] is not None:
         h_atu = (m["atual"] / comp_vmax) * yoy_plot_h
@@ -451,6 +461,9 @@ for i, m in enumerate(comp_meses):
         yoy_bars.append(
             f'<rect class="bar" x="{x_atu:.1f}" y="{y_atu:.1f}" width="{yoy_bar_w:.1f}" height="{max(h_atu,2):.1f}" rx="3" '
             f'fill="{color}" data-label="{m["mes_label"]}/{str(comp["ano_atual"])[2:]}{label_suffix}" data-value="{brl_m(m["atual"])}"></rect>'
+        )
+        yoy_bars.append(
+            f'<text class="bar-value" x="{x_atu+yoy_bar_w/2:.1f}" y="{max(y_atu-4, 10):.1f}" text-anchor="middle">{brl_m1(m["atual"])}</text>'
         )
     yoy_labels.append(f'<text class="axis-label" x="{gx+group_w/2:.1f}" y="{yoy_h-6}" text-anchor="middle">{m["mes_label"]}</text>')
 
@@ -469,7 +482,7 @@ proj_delta = delta_html(comp["projecao_vs_ano_anterior_pct"], favor_up=True) if 
 yoy_card = f"""
 <div class="table-card">
   <h3>Comparativo Anual — {comp['ano_atual']} x {comp['ano_anterior']}</h3>
-  <span class="hint">Faturamento líquido mês a mês &middot; <i class="dot" style="background:var(--ink-muted)"></i>{comp['ano_anterior']} &middot; <i class="dot contr"></i>{comp['ano_atual']} (mês corrente parcial em <i class="dot disp"></i>)</span>
+  <span class="hint">Faturamento líquido mês a mês &middot; <i class="dot" style="background:var(--ink-muted)"></i>{comp['ano_anterior']} &middot; <i class="dot" style="background:var(--good)"></i>{comp['ano_atual']} (mês corrente parcial em <i class="dot" style="background:var(--neutral)"></i>)</span>
   {yoy_svg}
   <div class="mix-legend" style="margin:4px 0 14px; gap:22px;">
     <span><b>Total {comp['ano_anterior']} (ano completo):</b>&nbsp;{brl_m(comp['total_ano_anterior_completo']) if comp['total_ano_anterior_completo'] else '—'}</span>
