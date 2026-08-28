@@ -2,12 +2,12 @@ name: Atualizar Dashboard Eleva Brasil
 
 on:
   schedule:
-    # A cada hora, 24h/dia. Voltou a ser sem restricao de horario porque o
-    # agendador do GitHub parou de disparar depois que a faixa 08h-19h foi
-    # adicionada (27/08) - suspeita de que a sintaxe de intervalo (11-22)
-    # tenha causado o problema. Se confirmar que roda estavel assim, dá pra
-    # tentar restringir de novo mais pra frente.
-    - cron: "0 * * * *"
+    # A cada hora, 24h/dia, no minuto :17 (nao no :00). O GitHub documenta que
+    # workflows agendados para o inicio exato da hora competem com todo mundo
+    # nesse mesmo instante e podem ser descartados silenciosamente em picos de
+    # carga - agendar num minuto "torto" evita esse congestionamento. Antes
+    # disso, so 2 de ~15 execucoes agendadas dispararam de fato.
+    - cron: "17 * * * *"
   workflow_dispatch: {}   # permite rodar manualmente pela aba Actions, a qualquer hora
 
 permissions:
