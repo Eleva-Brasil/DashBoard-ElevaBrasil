@@ -749,7 +749,7 @@ html = f"""<!doctype html>
         <div class="section-title"><h2>Potencial de Faturamento</h2><span class="hint">Onde está o dinheiro da frota, por status</span></div>
         {kpi_pot}
 
-        <div class="grid grid-2" style="margin-top:14px; align-items:start;">
+        <div class="grid grid-2" style="margin-top:14px; align-items:stretch;">
           {occ_table_card}
           {equip_disp_card}
         </div>
