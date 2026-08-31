@@ -360,57 +360,6 @@ kpi_pot = f"""
 """
 
 # ---------------------------------------------------------------------------
-# Gráfico - Evolução do Faturamento Mensal (SVG + tooltip)
-# ---------------------------------------------------------------------------
-serie = D["serie_mensal"]
-vals = [p["valor"] for p in serie]
-vmax = max(vals) if vals else 1
-n = len(serie)
-chart_w, chart_h = 980, 220
-pad_l, pad_r, pad_t, pad_b = 10, 10, 10, 26
-plot_w = chart_w - pad_l - pad_r
-plot_h = chart_h - pad_t - pad_b
-bar_gap = 4
-bar_w = (plot_w / n) - bar_gap if n else 10
-
-MESES_PT = {1: "jan", 2: "fev", 3: "mar", 4: "abr", 5: "mai", 6: "jun", 7: "jul", 8: "ago", 9: "set", 10: "out", 11: "nov", 12: "dez"}
-
-bars_svg = []
-labels_svg = []
-for i, p in enumerate(serie):
-    ano_s, mes_s = p["mes"].split("-")
-    label = f"{MESES_PT[int(mes_s)]}/{ano_s[2:]}"
-    h = (p["valor"] / vmax) * plot_h if vmax else 0
-    x = pad_l + i * (bar_w + bar_gap)
-    y = pad_t + (plot_h - h)
-    is_last = (i == n - 1)
-    color = "var(--neutral)" if not is_last else "var(--good)"
-    bars_svg.append(
-        f'<rect class="bar" x="{x:.1f}" y="{y:.1f}" width="{bar_w:.1f}" height="{max(h,2):.1f}" rx="3" '
-        f'fill="{color}" data-label="{label}{" (parcial)" if is_last else ""}" data-value="{brl_m(p["valor"])}"></rect>'
-    )
-    if i % 2 == 0 or is_last:
-        labels_svg.append(f'<text class="axis-label" x="{x+bar_w/2:.1f}" y="{chart_h-6}" text-anchor="middle">{label}</text>')
-
-chart_svg = f"""
-<div class="chart-wrap">
-  <svg viewBox="0 0 {chart_w} {chart_h}" width="100%" height="{chart_h}" id="revChart">
-    {''.join(bars_svg)}
-    {''.join(labels_svg)}
-  </svg>
-  <div class="tooltip" id="chartTooltip"></div>
-</div>
-"""
-
-chart_card = f"""
-<div class="table-card">
-  <h3>Evolução do Faturamento Líquido Mensal</h3>
-  <span class="hint">Últimos {n} meses com dado &middot; o mês mais recente é parcial (até {fat['corte_label']}) &middot; um lote de abertura/migração contábil de 31/05/2024 foi excluído deste gráfico para não distorcer a tendência</span>
-  {chart_svg}
-</div>
-"""
-
-# ---------------------------------------------------------------------------
 # Gráfico - Comparativo Anual (Ano Atual x Ano Anterior, mês a mês)
 # ---------------------------------------------------------------------------
 comp = D["comparativo_anual"]
@@ -736,7 +685,6 @@ JS = """
       bar.addEventListener('mouseleave', function(){ tip.style.opacity = 0; bar.style.opacity = 1; });
     });
   }
-  wireChart('revChart', 'chartTooltip');
   wireChart('yoyChart', 'yoyTooltip');
 
   var tabBtns = document.querySelectorAll('.tab-btn');
@@ -801,8 +749,7 @@ html = f"""<!doctype html>
         <div class="section-title"><h2>Potencial de Faturamento</h2><span class="hint">Onde está o dinheiro da frota, por status</span></div>
         {kpi_pot}
 
-        <div class="grid grid-2" style="margin-top:14px; align-items:start;">
-          {chart_card}
+        <div style="margin-top:14px;">
           {occ_table_card}
         </div>
 
