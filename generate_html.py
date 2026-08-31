@@ -316,7 +316,7 @@ kpi_frota = f"""
 # ---------------------------------------------------------------------------
 fat = D["faturamento"]
 kpi_fat = f"""
-<div class="grid grid-4">
+<div class="grid grid-3">
   <div class="card">
     <h3>Faturamento do Ano (YTD, líquido)</h3>
     <div class="kpi-value">{brl_m(fat['ytd_liquido'])}</div>
@@ -331,11 +331,6 @@ kpi_fat = f"""
     <h3>Último Mês Fechado ({fat['mes_fechado_label']})</h3>
     <div class="kpi-value">{brl_m(fat['mes_fechado_liquido'])}</div>
     <div class="kpi-sub">{delta_html(fat['mes_fechado_var_pct'], favor_up=True)} vs. mesmo mês do ano anterior ({brl_m(fat['mes_fechado_liquido_ant'])})</div>
-  </div>
-  <div class="card">
-    <h3>Bruto &rarr; Líquido (Ano)</h3>
-    <div class="kpi-value" style="font-size:22px">{brl_m(fat['ytd_bruto'])} <span style="color:var(--ink-muted);font-size:15px">bruto</span></div>
-    <div class="kpi-sub">Deduções (desconto + IRF): {brl_m(fat['ytd_deducoes'])} &rarr; Líquido: <b>{brl_m(fat['ytd_liquido'])}</b></div>
   </div>
 </div>
 """

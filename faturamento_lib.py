@@ -31,6 +31,19 @@ def compute_faturamento(fat: pd.DataFrame, hoje: pd.Timestamp):
 
     quality_notes = []
 
+    # "NF de débito" fica fora de todos os totais de Faturamento - confirmado
+    # com o usuário (não é receita de locação/serviço, é lançamento de débito).
+    debito = fat[fat["Tipo"] == "NF de débito"]
+    if len(debito) > 0:
+        quality_notes.append({
+            "icon": "🟡",
+            "title": "\"NF de débito\" excluída do Faturamento",
+            "detail": f"{len(debito)} lançamentos do tipo \"NF de débito\" (total de {brl(debito['Total Faturado'].sum())}) "
+                      f"foram excluídos de todos os totais de Faturamento (Ano, Mês, Mês Fechado, gráfico) — não entram "
+                      f"no cálculo, por decisão de negócio."
+        })
+    fat = fat[fat["Tipo"] != "NF de débito"]
+
     migracao = fat[fat["Data Faturamento"] == pd.Timestamp("2024-05-31")]
     if len(migracao) > 0:
         quality_notes.append({
