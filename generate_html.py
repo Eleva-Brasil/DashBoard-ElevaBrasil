@@ -749,8 +749,9 @@ html = f"""<!doctype html>
         <div class="section-title"><h2>Potencial de Faturamento</h2><span class="hint">Onde está o dinheiro da frota, por status</span></div>
         {kpi_pot}
 
-        <div style="margin-top:14px;">
+        <div class="grid grid-2" style="margin-top:14px; align-items:start;">
           {occ_table_card}
+          {equip_disp_card}
         </div>
 
         <div class="section-title"><h2>Comparativo Anual</h2><span class="hint">Momento atual x mesmo momento do ano passado</span></div>
@@ -758,9 +759,8 @@ html = f"""<!doctype html>
           {yoy_card}
         </div>
 
-        <div class="grid grid-2" style="margin-top:14px; align-items:start;">
+        <div style="margin-top:14px;">
           {modelos_table_card}
-          {equip_disp_card}
         </div>
 
         <div class="footer">
