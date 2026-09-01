@@ -30,12 +30,20 @@ def brl(v, casas=0):
 
 
 def brl_m(v):
+    """Abaixo de R$ 1 milhao mostra em K (milhares); a partir de R$ 1 milhao, em M."""
+    if abs(v) < 1_000_000:
+        s = f"{v/1_000:,.1f}"
+        return "R$ " + s.replace(",", "§").replace(".", ",").replace("§", ".") + " K"
     s = f"{v/1_000_000:,.2f}"
     return "R$ " + s.replace(",", "§").replace(".", ",").replace("§", ".") + " M"
 
 
 def brl_m1(v):
-    """Versao compacta (1 casa decimal), tudo junto, pra rotulo em cima de barra: R$5,3M"""
+    """Versao compacta (1 casa decimal), tudo junto, pra rotulo em cima de barra: R$5,3M
+    ou R$24,8K abaixo de R$ 1 milhao."""
+    if abs(v) < 1_000_000:
+        s = f"{v/1_000:,.1f}"
+        return "R$" + s.replace(",", "§").replace(".", ",").replace("§", ".") + "K"
     s = f"{v/1_000_000:,.1f}"
     return "R$" + s.replace(",", "§").replace(".", ",").replace("§", ".") + "M"
 
