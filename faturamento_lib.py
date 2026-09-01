@@ -38,7 +38,7 @@ def compute_faturamento(fat: pd.DataFrame, hoje: pd.Timestamp):
         quality_notes.append({
             "icon": "🟡",
             "title": "\"NF de débito\" excluída do Faturamento",
-            "detail": f"{len(debito)} lançamentos do tipo \"NF de débito\" (total de {brl(debito['Total Faturado'].sum())}) "
+            "detail": f"{len(debito)} lançamentos do tipo \"NF de débito\" (total de {brl(debito['Total Documento'].sum())}) "
                       f"foram excluídos de todos os totais de Faturamento (Ano, Mês, Mês Fechado, gráfico) — não entram "
                       f"no cálculo, por decisão de negócio."
         })
@@ -50,7 +50,7 @@ def compute_faturamento(fat: pd.DataFrame, hoje: pd.Timestamp):
             "icon": "🟡",
             "title": "Lote de abertura/migração em 31/05/2024",
             "detail": f"{len(migracao)} lançamentos de Faturamento estão todos datados em 31/05/2024 e sem o campo \"Tipo\" preenchido "
-                      f"(total líquido de {brl(migracao['Total Faturado'].sum())}), consistente com uma carga inicial de saldos no SAP B1 e não com faturamento diário real. "
+                      f"(total de {brl(migracao['Total Documento'].sum())}), consistente com uma carga inicial de saldos no SAP B1 e não com faturamento diário real. "
                       f"Para não distorcer a evolução mensal, este dia foi excluído do gráfico de evolução e das médias mensais (mantido apenas no acumulado geral da base)."
         })
 
@@ -64,13 +64,13 @@ def compute_faturamento(fat: pd.DataFrame, hoje: pd.Timestamp):
                       f"validar com o financeiro se representam estornos/ajustes manuais."
         })
 
-    negativos = fat[fat["Total Faturado"] < 0]
+    negativos = fat[fat["Total Documento"] < 0]
     if len(negativos) > 0:
         quality_notes.append({
             "icon": "🟡",
-            "title": "Lançamentos com Faturamento Líquido negativo",
-            "detail": f"{len(negativos)} registros têm \"Total Faturado\" negativo, somando {brl(negativos['Total Faturado'].sum())} "
-                      f"(prováveis estornos/notas de crédito). Estão incluídos nos totais líquidos apresentados."
+            "title": "Lançamentos com Total Documento negativo",
+            "detail": f"{len(negativos)} registros têm \"Total Documento\" negativo, somando {brl(negativos['Total Documento'].sum())} "
+                      f"(prováveis estornos/notas de crédito). Estão incluídos nos totais apresentados."
         })
 
     calc = fat["Total Documento"] - fat["Desconto"] - fat["IRF"]
@@ -80,8 +80,8 @@ def compute_faturamento(fat: pd.DataFrame, hoje: pd.Timestamp):
             "icon": "🟡",
             "title": "Diferença entre \"Total Documento - Desconto - IRF\" e \"Total Faturado\"",
             "detail": f"{len(mismatch)} registros ({len(mismatch)/len(fat)*100:.1f}% da base de Faturamento) têm essa conta divergente "
-                      f"(inclui casos de \"Total Documento\" = 0 com \"Total Faturado\" preenchido). O painel usa sempre o campo "
-                      f"\"Total Faturado\" (líquido) da própria planilha como fonte oficial, sem recalcular."
+                      f"(inclui casos de \"Total Documento\" = 0 com \"Total Faturado\" preenchido). Por decisão de negócio, o painel "
+                      f"usa \"Total Documento\" como fonte oficial dos totais de Faturamento (não \"Total Faturado\")."
         })
 
     sem_doc = fat["CNPJ/ CPF"].isna().sum()
@@ -104,7 +104,9 @@ def compute_faturamento(fat: pd.DataFrame, hoje: pd.Timestamp):
     fat_sem_migracao = fat[fat["Data Faturamento"] != pd.Timestamp("2024-05-31")]
 
     def liquido(df):
-        return float(df["Total Faturado"].sum())
+        # Fonte oficial do Faturamento = "Total Documento" (decisao de negocio),
+        # nao "Total Faturado". "NF de debito" ja foi excluida acima.
+        return float(df["Total Documento"].sum())
 
     def bruto(df):
         return float(df["Total Documento"].sum())
@@ -148,13 +150,13 @@ def compute_faturamento(fat: pd.DataFrame, hoje: pd.Timestamp):
 
     serie = fat_sem_migracao.copy()
     serie["ym"] = serie["Data Faturamento"].dt.to_period("M")
-    serie_mensal = serie.groupby("ym")["Total Faturado"].sum().sort_index().tail(24)
+    serie_mensal = serie.groupby("ym")["Total Documento"].sum().sort_index().tail(24)
     serie_json = [{"mes": str(idx), "valor": float(v)} for idx, v in serie_mensal.items()]
 
     serie_ano = fat_sem_migracao.copy()
     serie_ano["ano_"] = serie_ano["Data Faturamento"].dt.year
     serie_ano["mes_"] = serie_ano["Data Faturamento"].dt.month
-    por_mes = serie_ano.groupby(["ano_", "mes_"])["Total Faturado"].sum()
+    por_mes = serie_ano.groupby(["ano_", "mes_"])["Total Documento"].sum()
 
     comparativo_meses = []
     for m in range(1, 13):

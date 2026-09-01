@@ -4,133 +4,145 @@
     {
       "icon": "🟡",
       "title": "\"NF de débito\" excluída do Faturamento",
-      "detail": "422 lançamentos do tipo \"NF de débito\" (total de R$ 2.749.958) foram excluídos de todos os totais de Faturamento (Ano, Mês, Mês Fechado, gráfico) — não entram no cálculo, por decisão de negócio."
+      "detail": "482 lançamentos do tipo \"NF de débito\" (total de R$ 4.357.476) foram excluídos de todos os totais de Faturamento (Ano, Mês, Mês Fechado, gráfico) — não entram no cálculo, por decisão de negócio."
+    },
+    {
+      "icon": "🟡",
+      "title": "Lote de abertura/migração em 31/05/2024",
+      "detail": "384 lançamentos de Faturamento estão todos datados em 31/05/2024 e sem o campo \"Tipo\" preenchido (total de R$ 13.697.818), consistente com uma carga inicial de saldos no SAP B1 e não com faturamento diário real. Para não distorcer a evolução mensal, este dia foi excluído do gráfico de evolução e das médias mensais (mantido apenas no acumulado geral da base)."
     },
     {
       "icon": "🟡",
       "title": "Documentos sem classificação de \"Tipo\"",
-      "detail": "9 lançamentos de Faturamento (fora o lote de 31/05/2024) não têm o campo \"Tipo\" preenchido (ex.: Fatura, NFse Serviço, NF de débito). Foram mantidos no cálculo de faturamento líquido, mas recomendamos validar com o financeiro se representam estornos/ajustes manuais."
-    },
-    {
-      "icon": "🟡",
-      "title": "Lançamentos com Faturamento Líquido negativo",
-      "detail": "13 registros têm \"Total Faturado\" negativo, somando R$ -46.003 (prováveis estornos/notas de crédito). Estão incluídos nos totais líquidos apresentados."
+      "detail": "48 lançamentos de Faturamento (fora o lote de 31/05/2024) não têm o campo \"Tipo\" preenchido (ex.: Fatura, NFse Serviço, NF de débito). Foram mantidos no cálculo de faturamento líquido, mas recomendamos validar com o financeiro se representam estornos/ajustes manuais."
     },
     {
       "icon": "🟡",
       "title": "Diferença entre \"Total Documento - Desconto - IRF\" e \"Total Faturado\"",
-      "detail": "166 registros (4.2% da base de Faturamento) têm essa conta divergente (inclui casos de \"Total Documento\" = 0 com \"Total Faturado\" preenchido). O painel usa sempre o campo \"Total Faturado\" (líquido) da própria planilha como fonte oficial, sem recalcular."
+      "detail": "187 registros (3.4% da base de Faturamento) têm essa conta divergente (inclui casos de \"Total Documento\" = 0 com \"Total Faturado\" preenchido). Por decisão de negócio, o painel usa \"Total Documento\" como fonte oficial dos totais de Faturamento (não \"Total Faturado\")."
     },
     {
       "icon": "🟡",
       "title": "CNPJ/CPF não preenchido",
-      "detail": "11 lançamentos de Faturamento não têm CNPJ/CPF do cliente preenchido. Não afeta os totais financeiros."
+      "detail": "63 lançamentos de Faturamento não têm CNPJ/CPF do cliente preenchido. Não afeta os totais financeiros."
     },
     {
       "icon": "🟡",
       "title": "Número de NF repetido",
-      "detail": "58 registros compartilham o mesmo \"N NF\" com outro lançamento. Pode ser normal (parcelas/itens da mesma nota) mas vale checagem pontual se for usado como chave única."
+      "detail": "108 registros compartilham o mesmo \"N NF\" com outro lançamento. Pode ser normal (parcelas/itens da mesma nota) mas vale checagem pontual se for usado como chave única."
     }
   ],
   "faturamento": {
-    "ytd_liquido": 43458438.59,
-    "ytd_liquido_ant": 49338925.08,
-    "ytd_var_pct": -11.91855412428453,
-    "ytd_bruto": 45299160.25,
-    "ytd_deducoes": 1840721.6599999964,
-    "mtd_liquido": 24800.0,
-    "mtd_liquido_ant": 41702.64000000001,
-    "mtd_var_pct": -40.53134285982855,
+    "ytd_liquido": 45759543.730000004,
+    "ytd_liquido_ant": 51341366.629999995,
+    "ytd_var_pct": -10.87197958758347,
+    "ytd_bruto": 45759543.730000004,
+    "ytd_deducoes": 0.0,
+    "mtd_liquido": 513219.32,
+    "mtd_liquido_ant": 50781.780000000006,
+    "mtd_var_pct": 910.6367283698995,
     "mes_fechado_label": "ago/26",
-    "mes_fechado_liquido": 5496981.390000001,
-    "mes_fechado_liquido_ant": 5843635.58,
-    "mes_fechado_var_pct": -5.932166461345279,
+    "mes_fechado_liquido": 5886725.99,
+    "mes_fechado_liquido_ant": 6039533.7700000005,
+    "mes_fechado_var_pct": -2.5301254338379264,
     "corte_label": "01/09/2026"
   },
   "serie_mensal": [
     {
+      "mes": "2024-10",
+      "valor": 7804828.65
+    },
+    {
+      "mes": "2024-11",
+      "valor": 4992918.22
+    },
+    {
+      "mes": "2024-12",
+      "valor": 7926425.42
+    },
+    {
       "mes": "2025-01",
-      "valor": 5238240.05
+      "valor": 5406344.25
     },
     {
       "mes": "2025-02",
-      "valor": 5547555.51
+      "valor": 5773312.78
     },
     {
       "mes": "2025-03",
-      "valor": 7420424.13
+      "valor": 7535191.18
     },
     {
       "mes": "2025-04",
-      "valor": 7720777.07
+      "valor": 8083581.91
     },
     {
       "mes": "2025-05",
-      "valor": 5753869.03
+      "valor": 6015469.73
     },
     {
       "mes": "2025-06",
-      "valor": 5752841.11
+      "valor": 5968513.27
     },
     {
       "mes": "2025-07",
-      "valor": 6019879.96
+      "valor": 6468637.96
     },
     {
       "mes": "2025-08",
-      "valor": 5843635.58
+      "valor": 6039533.77
     },
     {
       "mes": "2025-09",
-      "valor": 5481779.18
+      "valor": 5697370.38
     },
     {
       "mes": "2025-10",
-      "valor": 5996667.86
+      "valor": 6357265.58
     },
     {
       "mes": "2025-11",
-      "valor": 5194967.41
+      "valor": 5399867.62
     },
     {
       "mes": "2025-12",
-      "valor": 5065008.33
+      "valor": 5519555.79
     },
     {
       "mes": "2026-01",
-      "valor": 5075818.15
+      "valor": 5407322.84
     },
     {
       "mes": "2026-02",
-      "valor": 5161030.82
+      "valor": 5377044.99
     },
     {
       "mes": "2026-03",
-      "valor": 6203917.83
+      "valor": 6307683.82
     },
     {
       "mes": "2026-04",
-      "valor": 4931128.81
+      "valor": 5105301.4
     },
     {
       "mes": "2026-05",
-      "valor": 5127554.74
+      "valor": 5306771.94
     },
     {
       "mes": "2026-06",
-      "valor": 6435565.34
+      "valor": 6623530.81
     },
     {
       "mes": "2026-07",
-      "valor": 5001641.51
+      "valor": 5231942.62
     },
     {
       "mes": "2026-08",
-      "valor": 5496981.39
+      "valor": 5886725.99
     },
     {
       "mes": "2026-09",
-      "valor": 24800.0
+      "valor": 513219.31999999995
     }
   ],
   "comparativo_anual": {
@@ -140,90 +152,86 @@
       {
         "mes": 1,
         "mes_label": "jan",
-        "atual": 5075818.15,
-        "anterior": 5238240.05
+        "atual": 5407322.84,
+        "anterior": 5406344.25
       },
       {
         "mes": 2,
         "mes_label": "fev",
-        "atual": 5161030.82,
-        "anterior": 5547555.51
+        "atual": 5377044.99,
+        "anterior": 5773312.78
       },
       {
         "mes": 3,
         "mes_label": "mar",
-        "atual": 6203917.83,
-        "anterior": 7420424.13
+        "atual": 6307683.82,
+        "anterior": 7535191.18
       },
       {
         "mes": 4,
         "mes_label": "abr",
-        "atual": 4931128.81,
-        "anterior": 7720777.07
+        "atual": 5105301.4,
+        "anterior": 8083581.91
       },
       {
         "mes": 5,
         "mes_label": "mai",
-        "atual": 5127554.74,
-        "anterior": 5753869.03
+        "atual": 5306771.94,
+        "anterior": 6015469.73
       },
       {
         "mes": 6,
         "mes_label": "jun",
-        "atual": 6435565.34,
-        "anterior": 5752841.11
+        "atual": 6623530.81,
+        "anterior": 5968513.27
       },
       {
         "mes": 7,
         "mes_label": "jul",
-        "atual": 5001641.51,
-        "anterior": 6019879.96
+        "atual": 5231942.62,
+        "anterior": 6468637.96
       },
       {
         "mes": 8,
         "mes_label": "ago",
-        "atual": 5496981.39,
-        "anterior": 5843635.58
+        "atual": 5886725.99,
+        "anterior": 6039533.77
       },
       {
         "mes": 9,
         "mes_label": "set",
-        "atual": 24800.0,
-        "anterior": 5481779.18
+        "atual": 513219.31999999995,
+        "anterior": 5697370.38
       },
       {
         "mes": 10,
         "mes_label": "out",
         "atual": null,
-        "anterior": 5996667.86
+        "anterior": 6357265.58
       },
       {
         "mes": 11,
         "mes_label": "nov",
         "atual": null,
-        "anterior": 5194967.41
+        "anterior": 5399867.62
       },
       {
         "mes": 12,
         "mes_label": "dez",
         "atual": null,
-        "anterior": 5065008.33
+        "anterior": 5519555.79
       }
     ],
-    "total_ano_anterior_completo": 71035645.22,
-    "ytd_atual": 43458438.59,
-    "ytd_anterior_mesmo_periodo": 49338925.08,
-    "projecao_fechamento_ano": 65009549.53012296,
-    "projecao_vs_ano_anterior_pct": -8.483199767122551
+    "total_ano_anterior_completo": 74264644.22000001,
+    "ytd_atual": 45759543.730000004,
+    "ytd_anterior_mesmo_periodo": 51341366.629999995,
+    "projecao_fechamento_ano": 68451776.48135246,
+    "projecao_vs_ano_anterior_pct": -7.827234345091094
   },
   "alertas": [
     {
       "nivel": "warning",
-      "texto": "Faturamento líquido acumulado no ano caiu 11.9% vs. mesmo período de 2025 (R$ 43.458.439 vs R$ 49.338.925)."
-    },
-    {
-      "nivel": "warning",
-      "texto": "Faturamento de ago/26 fechou 5.9% abaixo do mesmo mês do ano anterior."
+      "texto": "Faturamento líquido acumulado no ano caiu 10.9% vs. mesmo período de 2025 (R$ 45.759.544 vs R$ 51.341.367)."
     }
   ]
 }
