@@ -8,10 +8,13 @@ cliente, CNPJ ou nota individual. Esse JSON é seguro para o repositório
 público; a planilha em si e a base mestra NUNCA são commitadas.
 
 Mantém uma base mestra local (faturamento_master.csv, fora do git) com o
-histórico completo. A cada execução, MESCLA a planilha recebida com essa
-base (por "Nº interno", a nota mais recente vence em caso de repetição) -
-então a partir de agora dá pra mandar só a planilha do mês, sem perder o
-histórico anterior nem duplicar notas repetidas.
+histórico completo. A cada execução, a planilha recebida é tratada como
+fonte de verdade para a JANELA DE DATAS que ela cobre (do min ao max de
+"Data Faturamento" nela) - tudo que a base mestra tinha nesse intervalo é
+substituído pelo conteúdo da planilha nova. Datas fora dessa janela na
+base mestra não são tocadas. Isso evita tanto duplicar notas repetidas
+quanto deixar "presa" pra sempre uma nota que foi cancelada e sumiu de
+uma reexportação mais recente.
 
 Uso:
     python3 update_faturamento_manual.py "Faturamento Eleva Brasil - mes.xlsx"
@@ -49,15 +52,18 @@ def main():
     master = load_master()
     if len(master) > 0:
         antes = len(master)
-        combinado = pd.concat([master, novo], ignore_index=True)
-        # "Nº interno" NÃO é único (uma nota pode ter mais de uma linha com
-        # itens/valores diferentes) - dedup pela linha inteira, que só remove
-        # repetição exata (ex: mesma nota reenviada num arquivo com intervalo
-        # sobreposto), preservando linhas legítimas que só compartilham o
-        # mesmo "Nº interno".
+        novo_min, novo_max = novo["Data Faturamento"].min(), novo["Data Faturamento"].max()
+        # A planilha nova é a fonte de verdade pro intervalo [novo_min, novo_max]:
+        # tira da base tudo que tiver data nesse intervalo e recoloca com o
+        # conteúdo da planilha nova (pega nota nova E derruba nota cancelada
+        # que sumiu). Datas fora do intervalo ficam intocadas.
+        fora_da_janela = master[(master["Data Faturamento"] < novo_min) | (master["Data Faturamento"] > novo_max)]
+        removidas_da_janela = len(master) - len(fora_da_janela)
+        combinado = pd.concat([fora_da_janela, novo], ignore_index=True)
         combinado = combinado.drop_duplicates(keep="last")
-        novas_notas = len(combinado) - antes
-        print(f"Base mestra: {antes} linhas -> {len(combinado)} linhas ({novas_notas:+d}).")
+        delta = len(combinado) - antes
+        print(f"Janela {novo_min.date()} a {novo_max.date()}: {removidas_da_janela} linhas antigas substituídas por {len(novo)} da planilha nova.")
+        print(f"Base mestra: {antes} linhas -> {len(combinado)} linhas ({delta:+d}).")
         fat = combinado
     else:
         print(f"Nenhuma base mestra encontrada - usando esta planilha ({len(novo)} notas) como base inicial.")
