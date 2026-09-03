@@ -1,5 +1,6 @@
 .DS_Store
 *.xlsx
+faturamento_master.csv
 dashboard_data.json
 dashboard_eleva.html
 .loc1_cache_business_partners.json
