@@ -1,10 +1,10 @@
 {
-  "hoje_efetivo": "2026-09-01",
+  "hoje_efetivo": "2026-09-03",
   "quality_notes": [
     {
       "icon": "🟡",
       "title": "\"NF de débito\" excluída do Faturamento",
-      "detail": "482 lançamentos do tipo \"NF de débito\" (total de R$ 4.357.476) foram excluídos de todos os totais de Faturamento (Ano, Mês, Mês Fechado, gráfico) — não entram no cálculo, por decisão de negócio."
+      "detail": "483 lançamentos do tipo \"NF de débito\" (total de R$ 4.359.431) foram excluídos de todos os totais de Faturamento (Ano, Mês, Mês Fechado, gráfico) — não entram no cálculo, por decisão de negócio."
     },
     {
       "icon": "🟡",
@@ -33,19 +33,19 @@
     }
   ],
   "faturamento": {
-    "ytd_liquido": 45759543.730000004,
-    "ytd_liquido_ant": 51341366.629999995,
-    "ytd_var_pct": -10.87197958758347,
-    "ytd_bruto": 45759543.730000004,
+    "ytd_liquido": 45927013.64,
+    "ytd_liquido_ant": 51637142.25,
+    "ytd_var_pct": -11.058180916276406,
+    "ytd_bruto": 45927013.64,
     "ytd_deducoes": 0.0,
-    "mtd_liquido": 513219.32,
-    "mtd_liquido_ant": 50781.780000000006,
-    "mtd_var_pct": 910.6367283698995,
+    "mtd_liquido": 680689.23,
+    "mtd_liquido_ant": 346557.4,
+    "mtd_var_pct": 96.41457086185432,
     "mes_fechado_label": "ago/26",
     "mes_fechado_liquido": 5886725.99,
     "mes_fechado_liquido_ant": 6039533.7700000005,
     "mes_fechado_var_pct": -2.5301254338379264,
-    "corte_label": "01/09/2026"
+    "corte_label": "03/09/2026"
   },
   "serie_mensal": [
     {
@@ -142,7 +142,7 @@
     },
     {
       "mes": "2026-09",
-      "valor": 513219.31999999995
+      "valor": 680689.23
     }
   ],
   "comparativo_anual": {
@@ -200,7 +200,7 @@
       {
         "mes": 9,
         "mes_label": "set",
-        "atual": 513219.31999999995,
+        "atual": 680689.23,
         "anterior": 5697370.38
       },
       {
@@ -223,15 +223,15 @@
       }
     ],
     "total_ano_anterior_completo": 74264644.22000001,
-    "ytd_atual": 45759543.730000004,
-    "ytd_anterior_mesmo_periodo": 51341366.629999995,
-    "projecao_fechamento_ano": 68451776.48135246,
-    "projecao_vs_ano_anterior_pct": -7.827234345091094
+    "ytd_atual": 45927013.64,
+    "ytd_anterior_mesmo_periodo": 51637142.25,
+    "projecao_fechamento_ano": 68143739.7504065,
+    "projecao_vs_ano_anterior_pct": -8.242016822245956
   },
   "alertas": [
     {
       "nivel": "warning",
-      "texto": "Faturamento líquido acumulado no ano caiu 10.9% vs. mesmo período de 2025 (R$ 45.759.544 vs R$ 51.341.367)."
+      "texto": "Faturamento líquido acumulado no ano caiu 11.1% vs. mesmo período de 2025 (R$ 45.927.014 vs R$ 51.637.142)."
     }
   ]
 }
