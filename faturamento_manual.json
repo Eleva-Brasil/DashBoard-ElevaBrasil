@@ -33,14 +33,14 @@
     }
   ],
   "faturamento": {
-    "ytd_liquido": 45927013.64,
+    "ytd_liquido": 46093220.16,
     "ytd_liquido_ant": 51637142.25,
-    "ytd_var_pct": -11.058180916276406,
-    "ytd_bruto": 45927013.64,
+    "ytd_var_pct": -10.73630694580121,
+    "ytd_bruto": 46093220.16,
     "ytd_deducoes": 0.0,
-    "mtd_liquido": 680689.23,
+    "mtd_liquido": 846895.75,
     "mtd_liquido_ant": 346557.4,
-    "mtd_var_pct": 96.41457086185432,
+    "mtd_var_pct": 144.37387572736867,
     "mes_fechado_label": "ago/26",
     "mes_fechado_liquido": 5886725.99,
     "mes_fechado_liquido_ant": 6039533.7700000005,
@@ -142,7 +142,7 @@
     },
     {
       "mes": "2026-09",
-      "valor": 680689.23
+      "valor": 846895.75
     }
   ],
   "comparativo_anual": {
@@ -200,7 +200,7 @@
       {
         "mes": 9,
         "mes_label": "set",
-        "atual": 680689.23,
+        "atual": 846895.75,
         "anterior": 5697370.38
       },
       {
@@ -223,15 +223,15 @@
       }
     ],
     "total_ano_anterior_completo": 74264644.22000001,
-    "ytd_atual": 45927013.64,
+    "ytd_atual": 46093220.16,
     "ytd_anterior_mesmo_periodo": 51637142.25,
-    "projecao_fechamento_ano": 68143739.7504065,
-    "projecao_vs_ano_anterior_pct": -8.242016822245956
+    "projecao_fechamento_ano": 68390346.98536584,
+    "projecao_vs_ano_anterior_pct": -7.909951358862344
   },
   "alertas": [
     {
       "nivel": "warning",
-      "texto": "Faturamento líquido acumulado no ano caiu 11.1% vs. mesmo período de 2025 (R$ 45.927.014 vs R$ 51.637.142)."
+      "texto": "Faturamento líquido acumulado no ano caiu 10.7% vs. mesmo período de 2025 (R$ 46.093.220 vs R$ 51.637.142)."
     }
   ]
 }
