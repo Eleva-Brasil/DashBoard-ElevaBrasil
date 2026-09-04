@@ -199,6 +199,12 @@ body{
 .table-card{ background:var(--card-bg); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 18px 8px; color:var(--ink-primary); }
 .table-card h3{ margin:0 0 4px; font-size:13.5px; font-weight:700; color:var(--ink-primary); }
 .table-card .hint{ font-size:11.5px; color:var(--ink-muted); margin-bottom:10px; display:block; }
+.filter-row{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:2px 0 12px; }
+.filter-select{ font-size:12px; padding:6px 10px; border-radius:8px; border:1px solid var(--hairline); background:#fafbfd; color:var(--ink-primary); font-family:inherit; cursor:pointer; }
+.filter-select:focus{ outline:2px solid var(--neutral); outline-offset:1px; }
+.filter-clear{ font-size:12px; padding:6px 12px; border-radius:8px; border:1px solid var(--hairline); background:#fff; color:var(--ink-secondary); font-family:inherit; cursor:pointer; }
+.filter-clear:hover{ background:#f1f3f6; }
+tr.filtro-oculto{ display:none; }
 .tbl-scroll{ max-height:430px; overflow-y:auto; overflow-x:auto; -webkit-overflow-scrolling:touch; border-top:1px solid var(--hairline); }
 table{ width:100%; min-width:640px; border-collapse:collapse; font-size:12.5px; }
 .table-narrow table{ min-width:0; }
@@ -474,19 +480,23 @@ occ_table_card = f"""
 # ---------------------------------------------------------------------------
 modelos = D["modelos_tabela"]
 rows = []
+obs_labels = {"critical": "Manutenção crítica", "neutral": "Capital parado", "good": "Alta demanda"}
 for m in modelos:
     manut_cls = "num-crit" if m["manutencao_pct"] >= 60 else ("" if m["manutencao_pct"] < 40 else "num-crit")
     disp_cls = "num-neutral" if m["disponivel"] >= 5 else ""
-    flag = ""
+    obs_kind = ""
     if m["manutencao_pct"] >= 70 and m["total"] >= 5:
-        flag = '<span class="tag critical">manutenção crítica</span>'
+        obs_kind = "critical"
     elif m["disponivel"] >= 5:
-        flag = '<span class="tag neutral">capital parado</span>'
+        obs_kind = "neutral"
     elif m["ocupacao_pct"] >= 80:
-        flag = '<span class="tag good">alta demanda</span>'
-    rows.append(f"""<tr>
+        obs_kind = "good"
+    obs_label = obs_labels.get(obs_kind, "")
+    flag = f'<span class="tag {obs_kind}">{obs_label.lower()}</span>' if obs_kind else ""
+    tipo_title = m['tipo'].title()
+    rows.append(f"""<tr data-modelo="{m['modelo']}" data-tipo="{tipo_title}" data-obs="{obs_label or "Sem observação"}">
       <td>{m['modelo']}</td>
-      <td>{m['tipo'].title()}</td>
+      <td>{tipo_title}</td>
       <td class="{disp_cls}">{fmt_int(m['disponivel'])}</td>
       <td>{fmt_int(m['contrato'])}</td>
       <td class="{manut_cls}">{fmt_int(m['manutencao'])}</td>
@@ -495,12 +505,36 @@ for m in modelos:
       <td>{flag}</td>
     </tr>""")
 
+modelos_unicos = sorted({m['modelo'] for m in modelos})
+tipos_unicos = sorted({m['tipo'].title() for m in modelos})
+obs_unicas = ["Manutenção crítica", "Capital parado", "Alta demanda", "Sem observação"]
+
+modelo_opts = "".join(f'<option value="{v}">{v}</option>' for v in modelos_unicos)
+tipo_opts = "".join(f'<option value="{v}">{v}</option>' for v in tipos_unicos)
+obs_opts = "".join(f'<option value="{v}">{v}</option>' for v in obs_unicas)
+
 modelos_table_card = f"""
 <div class="table-card">
   <h3>Disponibilidade por Modelo</h3>
   <span class="hint">{len(modelos)} modelos &middot; ordenado por total de equipamentos &middot; role para ver todos</span>
+  <div class="filter-row">
+    <select class="filter-select" id="filtroModelo" data-col="modelo">
+      <option value="">Modelo (todos)</option>
+      {modelo_opts}
+    </select>
+    <select class="filter-select" id="filtroTipo" data-col="tipo">
+      <option value="">Tipo (todos)</option>
+      {tipo_opts}
+    </select>
+    <select class="filter-select" id="filtroObs" data-col="obs">
+      <option value="">Observação (todas)</option>
+      {obs_opts}
+    </select>
+    <button class="filter-clear" id="filtroLimpar" type="button">Limpar</button>
+    <span class="hint" id="filtroContagem"></span>
+  </div>
   <div class="tbl-scroll">
-    <table>
+    <table id="tabelaModelos">
       <thead><tr>
         <th>Modelo</th><th>Tipo</th><th>Disponível</th><th>Contrato</th><th>Manutenção</th><th>Total</th><th>Ocupação %</th><th>Observação</th>
       </tr></thead>
@@ -718,6 +752,36 @@ JS = """
   try{
     if(localStorage.getItem('eleva_sidebar_collapsed') === '1') setCollapsed(true);
   }catch(e){}
+
+  var tabela = document.getElementById('tabelaModelos');
+  if(tabela){
+    var selects = [
+      document.getElementById('filtroModelo'),
+      document.getElementById('filtroTipo'),
+      document.getElementById('filtroObs')
+    ];
+    var contagem = document.getElementById('filtroContagem');
+    var linhas = Array.prototype.slice.call(tabela.querySelectorAll('tbody tr'));
+
+    function aplicarFiltros(){
+      var vModelo = selects[0].value, vTipo = selects[1].value, vObs = selects[2].value;
+      var visiveis = 0;
+      linhas.forEach(function(tr){
+        var ok = (!vModelo || tr.getAttribute('data-modelo') === vModelo)
+              && (!vTipo || tr.getAttribute('data-tipo') === vTipo)
+              && (!vObs || tr.getAttribute('data-obs') === vObs);
+        tr.classList.toggle('filtro-oculto', !ok);
+        if(ok) visiveis++;
+      });
+      contagem.textContent = (vModelo || vTipo || vObs) ? ('· ' + visiveis + ' de ' + linhas.length + ' modelos') : '';
+    }
+    selects.forEach(function(s){ s.addEventListener('change', aplicarFiltros); });
+    var limparBtn = document.getElementById('filtroLimpar');
+    if(limparBtn) limparBtn.addEventListener('click', function(){
+      selects.forEach(function(s){ s.value = ''; });
+      aplicarFiltros();
+    });
+  }
 })();
 </script>
 """
