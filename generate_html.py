@@ -68,6 +68,46 @@ def delta_html(var_pct, favor_up=True):
     return f'<span class="delta {cls}">{arrow} {pct(abs(var_pct))}</span>'
 
 
+def hbar_svg(rows, value_fmt, color="var(--neutral)", label_w=210, chart_w=560, row_h=27):
+    """Gráfico de barras horizontais simples: rows = [(label, value), ...], já
+    ordenado do maior pro menor. Cada barra mostra o rótulo à esquerda e o
+    valor formatado logo depois do fim da barra (sem tooltip - valor sempre visível)."""
+    vmax = max((v for _, v in rows), default=1) or 1
+    bar_area = chart_w - label_w - 70
+    h = len(rows) * row_h + 6
+    parts = []
+    for i, (label, value) in enumerate(rows):
+        y = 6 + i * row_h
+        bar_w = max((value / vmax) * bar_area, 2) if vmax else 2
+        parts.append(
+            f'<text x="{label_w - 10}" y="{y + 15}" text-anchor="end" font-size="11.5" fill="var(--ink-secondary)">{label}</text>'
+            f'<rect x="{label_w}" y="{y + 4}" width="{bar_w:.1f}" height="16" rx="4" fill="{color}"></rect>'
+            f'<text x="{label_w + bar_w + 8:.1f}" y="{y + 15}" font-size="11" font-weight="700" fill="var(--ink-primary)">{value_fmt(value)}</text>'
+        )
+    return f'<svg viewBox="0 0 {chart_w} {h}" width="100%" height="{h}">{"".join(parts)}</svg>'
+
+
+def vbar_svg(rows, value_fmt, color="var(--neutral)", w=980, h=190):
+    """Histograma de barras verticais: rows = [(label, value), ...]."""
+    pad_l, pad_r, pad_t, pad_b = 10, 10, 20, 26
+    plot_w, plot_h = w - pad_l - pad_r, h - pad_t - pad_b
+    n = max(len(rows), 1)
+    group_w = plot_w / n
+    bar_w = group_w * 0.5
+    vmax = max((v for _, v in rows), default=1) or 1
+    parts = []
+    for i, (label, value) in enumerate(rows):
+        bx = pad_l + i * group_w + (group_w - bar_w) / 2
+        bh = (value / vmax) * plot_h if vmax else 0
+        by = pad_t + (plot_h - bh)
+        parts.append(
+            f'<rect x="{bx:.1f}" y="{by:.1f}" width="{bar_w:.1f}" height="{max(bh, 2):.1f}" rx="3" fill="{color}"></rect>'
+            f'<text class="bar-value" x="{bx + bar_w / 2:.1f}" y="{max(by - 6, 10):.1f}" text-anchor="middle">{value_fmt(value)}</text>'
+            f'<text class="axis-label" x="{bx + bar_w / 2:.1f}" y="{h - 6}" text-anchor="middle">{label}</text>'
+        )
+    return f'<svg viewBox="0 0 {w} {h}" width="100%" height="{h}">{"".join(parts)}</svg>'
+
+
 # ---------------------------------------------------------------------------
 # CSS (bloco estático, sem f-string para não conflitar com chaves)
 # ---------------------------------------------------------------------------
@@ -171,6 +211,7 @@ body{
 .card{ background:var(--card-bg); color:var(--ink-primary); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 18px; }
 .card h3{ margin:0 0 10px; font-size:12.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--ink-secondary); }
 .kpi-value{ font-size:34px; font-weight:800; line-height:1; letter-spacing:-.5px; }
+.grid-5 .kpi-value{ font-size:26px; white-space:nowrap; }
 .kpi-unit{ font-size:13px; font-weight:600; color:var(--ink-muted); margin-left:6px; }
 .kpi-sub{ margin-top:8px; font-size:12.5px; color:var(--ink-secondary); }
 .kpi-row{ display:flex; align-items:baseline; gap:6px; flex-wrap:wrap; }
@@ -297,9 +338,9 @@ kpi_frota = f"""
       <div class="mix-seg-manut" style="width:{frota['manutencao_pct']:.2f}%"></div>
     </div>
     <div class="mix-legend">
-      <span><i class="dot disp"></i>Disp. {fmt_int(frota['disponivel'])}</span>
-      <span><i class="dot contr"></i>Contrato {fmt_int(frota['contrato'])}</span>
-      <span><i class="dot manut"></i>Manut. {fmt_int(frota['manutencao'])}</span>
+      <span>Disp. {fmt_int(frota['disponivel'])}</span>
+      <span>Contrato {fmt_int(frota['contrato'])}</span>
+      <span>Manut. {fmt_int(frota['manutencao'])}</span>
     </div>
   </div>
   <div class="card">
@@ -672,6 +713,300 @@ af_page = f"""
 """
 
 # ---------------------------------------------------------------------------
+# ABA "Saúde da Frota" - por equipamento (Valor de Compra x Faturamento x
+# Despesas acumulados, cruzado com status ao vivo da API)
+# ---------------------------------------------------------------------------
+sf = D["saude_frota"]
+sf_tipos = D["saude_por_tipo"]
+sf_tabela = D["saude_tabela"]
+sf_hist = D["saude_idade_hist"]
+sf_nunca_lista = D["saude_nunca_alugado_lista"]
+
+sf_lucro_color = "var(--good)" if sf["lucro_acumulado_total"] >= 0 else "var(--critical)"
+idade_media_txt = f"{sf['idade_media_anos']:.1f} anos".replace(".", ",") if sf["idade_media_anos"] is not None else "—"
+
+# --- gráficos (estado inicial, sem filtro - o JS redesenha ao filtrar) ------
+sf_comp_svg = hbar_svg(
+    sorted([(t["tipo"].title(), t["total"]) for t in sf_tipos], key=lambda x: x[1], reverse=True),
+    fmt_int, color="var(--neutral)"
+)
+sf_valor_svg = hbar_svg(
+    [(t["tipo"].title(), t["valor_compra"]) for t in sf_tipos],  # já vem ordenado por valor investido
+    brl_m1, color="var(--status-contr)"
+)
+sf_idade_hist_svg = vbar_svg([(h["faixa"], h["qtd"]) for h in sf_hist], fmt_int, color="var(--good)")
+
+sf_comp_card = f"""
+<div class="table-card">
+  <h3>Composição da Frota por Tipo</h3>
+  <span class="hint">Quantidade de equipamentos por Tipo de Modelo</span>
+  <div id="sfCompChartWrap">{sf_comp_svg}</div>
+</div>
+"""
+
+sf_valor_card = f"""
+<div class="table-card">
+  <h3>Valor Investido por Tipo</h3>
+  <span class="hint">Soma do Valor de Compra por Tipo de Modelo</span>
+  <div id="sfValorChartWrap">{sf_valor_svg}</div>
+</div>
+"""
+
+sf_idade_card = f"""
+<div class="table-card">
+  <h3>Distribuição de Idade da Frota</h3>
+  <span class="hint">Anos desde a compra (ou fabricação, quando a data de compra não é conhecida)</span>
+  <div id="sfIdadeChartWrap">{sf_idade_hist_svg}</div>
+</div>
+"""
+
+sf_nunca_rows = []
+for e in sf_nunca_lista:
+    idade_txt = f"{e['idade_anos']:.1f} anos".replace(".", ",") if e["idade_anos"] is not None else "—"
+    status_dot = {"Disponivel": "disp", "Em Contrato": "contr", "Em Manutenção": "manut"}.get(e["status"], "")
+    sf_nunca_rows.append(f"""<tr>
+      <td>{e['patrimonio']}</td>
+      <td>{e['modelo']}</td>
+      <td>{e['tipo'].title()}</td>
+      <td><i class="dot {status_dot}"></i>{e['status']}</td>
+      <td>{idade_txt}</td>
+      <td>{brl(e['valor_compra'], 0)}</td>
+    </tr>""")
+
+sf_nunca_card = f"""
+<div class="table-card table-narrow">
+  <h3>Equipamentos que Nunca Geraram Faturamento</h3>
+  <span class="hint" id="sfNuncaHint">{fmt_int(sf['qtd_nunca_alugado'])} no total ({fmt_int(sf['qtd_nunca_alugado_disponivel'])} disponíveis agora) &middot; {brl_m(sf['valor_nunca_alugado'])} em capital parado &middot; os 15 de maior valor investido</span>
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr>
+        <th>Patrimônio</th><th>Modelo</th><th>Tipo</th><th>Status</th><th>Idade</th><th>Valor de Compra</th>
+      </tr></thead>
+      <tbody id="sfNuncaTbody">{''.join(sf_nunca_rows)}</tbody>
+    </table>
+  </div>
+</div>
+"""
+
+sf_tipo_rows = []
+for t in sf_tipos:
+    roi_txt = pct(t["roi_pct"]) if t["roi_pct"] is not None else "—"
+    roi_cls = "num-good" if (t["roi_pct"] or 0) >= 0 else "num-crit"
+    sf_tipo_rows.append(f"""<tr>
+      <td>{t['tipo']}</td>
+      <td>{fmt_int(t['total'])}</td>
+      <td>{brl(t['valor_compra'], 0)}</td>
+      <td>{brl(t['faturamento'], 0)}</td>
+      <td>{brl(t['despesas'], 0)}</td>
+      <td>{brl(t['lucro'], 0)}</td>
+      <td class="{roi_cls}">{roi_txt}</td>
+    </tr>""")
+
+sf_por_tipo_card = f"""
+<div class="table-card">
+  <h3>Saúde da Frota por Tipo de Equipamento</h3>
+  <span class="hint">Ordenado por valor investido &middot; Lucro = Faturamento acumulado &minus; Despesas acumuladas &middot; ROI% = Lucro &divide; Valor de Compra</span>
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr>
+        <th>Tipo</th><th>Qtd.</th><th>Valor de Compra</th><th>Faturamento Acum.</th><th>Despesas Acum.</th><th>Lucro Acum.</th><th>ROI %</th>
+      </tr></thead>
+      <tbody id="sfTipoTbody">{''.join(sf_tipo_rows)}</tbody>
+    </table>
+  </div>
+</div>
+"""
+
+status_cls_map = {"Disponivel": "disp", "Em Contrato": "contr", "Em Manutenção": "manut"}
+sf_rows = []
+for e in sf_tabela:
+    roi_txt = pct(e["roi_pct"]) if e["roi_pct"] is not None else "—"
+    roi_cls = "" if e["roi_pct"] is None else ("num-good" if e["roi_pct"] >= 0 else "num-crit")
+    idade_txt = f"{e['idade_anos']:.1f} anos".replace(".", ",") if e["idade_anos"] is not None else "—"
+    tipo_title = e['tipo'].title()
+    status_dot = status_cls_map.get(e["status"], "")
+    registro_flag = "" if e["tem_registro_financeiro"] else '<span class="tag warning">sem registro</span>'
+    sf_rows.append(f"""<tr data-modelo="{e['modelo']}" data-tipo="{tipo_title}" data-status="{e['status']}">
+      <td>{e['patrimonio']}</td>
+      <td>{e['modelo']}</td>
+      <td>{tipo_title}</td>
+      <td><i class="dot {status_dot}"></i>{e['status']}</td>
+      <td>{idade_txt}</td>
+      <td>{brl(e['valor_compra'], 0)}</td>
+      <td>{brl(e['faturamento'], 0)}</td>
+      <td>{brl(e['despesas'], 0)}</td>
+      <td>{brl(e['lucro'], 0)}</td>
+      <td class="{roi_cls}">{roi_txt}</td>
+      <td>{registro_flag}</td>
+    </tr>""")
+
+sf_modelos_unicos = sorted({e['modelo'] for e in sf_tabela})
+sf_tipos_unicos = sorted({e['tipo'].title() for e in sf_tabela})
+sf_status_unicos = ["Disponivel", "Em Contrato", "Em Manutenção"]
+sf_modelo_opts = "".join(f'<option value="{v}">{v}</option>' for v in sf_modelos_unicos)
+sf_tipo_opts = "".join(f'<option value="{v}">{v}</option>' for v in sf_tipos_unicos)
+sf_status_opts = "".join(f'<option value="{v}">{v}</option>' for v in sf_status_unicos)
+
+sf_tabela_card = f"""
+<div class="table-card">
+  <h3>Equipamentos — Cadastro Completo</h3>
+  <span class="hint" id="sfCadastroHint">{len(sf_tabela)} de {len(sf_tabela)} equipamentos &middot; ordenado por Lucro Acumulado &middot; role para ver todos</span>
+  <div class="tbl-scroll">
+    <table id="tabelaSaude">
+      <thead><tr>
+        <th>Patrimônio</th><th>Modelo</th><th>Tipo</th><th>Status</th><th>Idade</th><th>Valor de Compra</th><th>Faturamento Acum.</th><th>Despesas Acum.</th><th>Lucro Acum.</th><th>ROI %</th><th></th>
+      </tr></thead>
+      <tbody id="tabelaSaudeBody">{''.join(sf_rows)}</tbody>
+    </table>
+  </div>
+</div>
+"""
+
+# Dados por equipamento embutidos pro filtro global recalcular tudo no cliente
+# (sem round-trip ao servidor) - só campos já públicos, sem dado de cliente.
+sf_raw_json = json.dumps([
+    {
+        "patrimonio": e["patrimonio"], "modelo": e["modelo"], "tipo": e["tipo"].title(),
+        "status": e["status"], "idade": e["idade_anos"], "valor_compra": e["valor_compra"],
+        "faturamento": e["faturamento"], "despesas": e["despesas"], "lucro": e["lucro"],
+        "roi": e["roi_pct"], "tem_registro": e["tem_registro_financeiro"],
+    }
+    for e in sf_tabela
+], ensure_ascii=False)
+
+sf_filtro_card = f"""
+<div class="table-card" style="margin-bottom:14px;">
+  <h3>Filtrar Frota</h3>
+  <span class="hint">Selecione Tipo, Modelo e/ou Status - todos os números, gráficos e tabelas desta página recalculam na hora</span>
+  <div class="filter-row" style="margin-top:10px;">
+    <select class="filter-select" id="sfTopTipo">
+      <option value="">Tipo (todos)</option>
+      {sf_tipo_opts}
+    </select>
+    <select class="filter-select" id="sfTopModelo">
+      <option value="">Modelo (todos)</option>
+      {sf_modelo_opts}
+    </select>
+    <select class="filter-select" id="sfTopStatus">
+      <option value="">Status (todos)</option>
+      {sf_status_opts}
+    </select>
+    <button class="filter-clear" id="sfTopLimpar" type="button">Limpar filtros</button>
+    <span class="hint" id="sfTopContagem">{len(sf_tabela)} de {len(sf_tabela)} equipamentos selecionados</span>
+  </div>
+</div>
+"""
+
+sf_page = f"""
+<div class="wrap">
+  <div class="header">
+    <div class="header-left">
+      <img class="logo" src="data:image/png;base64,{LOGO_B64}" alt="Eleva Brasil" />
+      <div class="title-block">
+        <h1>Saúde da Frota</h1>
+        <div class="sub">Valor de Compra x Faturamento x Despesas, por equipamento &middot; Eleva Brasil</div>
+      </div>
+    </div>
+    <div class="header-right">
+      Atualizado em <b>{sf['gerado_em']}</b><br/>
+      Fonte: Status ao vivo (API LOC1) + Ativo Fixo + Faturamento e Despesa por Equipamento
+    </div>
+  </div>
+
+  {sf_filtro_card}
+
+  <div class="section-title"><h2>Panorama</h2><span class="hint" id="sfPanoramaHint">{fmt_int(sf['total_equipamentos'])} equipamentos &middot; valores acumulados desde a origem das planilhas</span></div>
+  <div class="grid grid-5">
+    <div class="card">
+      <h3>Valor Investido (Frota)</h3>
+      <div class="kpi-value" id="sfKpiValor">{brl_m(sf['valor_compra_total'])}</div>
+      <div class="kpi-sub">Soma do Valor de Compra de todos os equipamentos</div>
+    </div>
+    <div class="card">
+      <h3>Faturamento Acumulado</h3>
+      <div class="kpi-value" id="sfKpiFat">{brl_m(sf['faturamento_acumulado_total'])}</div>
+      <div class="kpi-sub">Soma por equipamento &middot; <span class="tag warning">ver nota de qualidade</span></div>
+    </div>
+    <div class="card">
+      <h3>Despesas Acumuladas</h3>
+      <div class="kpi-value" id="sfKpiDesp">{brl_m(sf['despesas_acumuladas_total'])}</div>
+      <div class="kpi-sub">Soma do Valor de Despesas por equipamento</div>
+    </div>
+    <div class="card">
+      <h3>Lucro Acumulado</h3>
+      <div class="kpi-value" id="sfKpiLucro" style="color:{sf_lucro_color}">{brl_m(sf['lucro_acumulado_total'])}</div>
+      <div class="kpi-sub">Faturamento &minus; Despesas &middot; ROI médio <span id="sfKpiRoiMedio">{pct(sf['roi_medio_pct'])}</span></div>
+    </div>
+    <div class="card">
+      <h3>Idade Média da Frota</h3>
+      <div class="kpi-value" id="sfKpiIdade">{idade_media_txt}</div>
+      <div class="kpi-sub">Desde a data de compra (ou fabricação, quando não há data de compra)</div>
+    </div>
+  </div>
+
+  <div class="section-title"><h2>Composição e Investimento</h2><span class="hint">Por Tipo de Modelo</span></div>
+  <div class="grid grid-2">
+    {sf_comp_card}
+    {sf_valor_card}
+  </div>
+
+  <div class="section-title"><h2>Idade da Frota</h2><span class="hint">Anos desde a compra, por faixa</span></div>
+  <div class="grid grid-2">
+    {sf_idade_card}
+    <div class="card">
+      <h3>Como ler esta aba</h3>
+      <div class="kpi-sub" style="margin-top:4px; line-height:1.6;">
+        Use o filtro <b>Filtrar Frota</b> no topo pra ver só um Tipo, Modelo ou Status - todos os cartões, gráficos e
+        tabelas abaixo recalculam automaticamente pra esse recorte, incluindo Panorama e Pontos de Atenção. Assim dá
+        pra comparar, por exemplo, o ROI médio só dos Manipuladores Telescópicos, ou só do que está Disponível hoje.
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title"><h2>Pontos de Atenção</h2><span class="hint">Gerados a partir dos dados por equipamento</span></div>
+  <div class="grid grid-4">
+    <div class="card">
+      <h3>Recuperaram o Investimento</h3>
+      <div class="kpi-value" id="sfKpiRecuperouPct">{pct(sf['pct_recuperou_investimento'])}</div>
+      <div class="kpi-sub">dos equipamentos com Valor de Compra registrado &middot; Faturamento &ge; Valor de Compra</div>
+    </div>
+    <div class="card">
+      <h3>Nunca Alugados</h3>
+      <div class="kpi-value" style="color:var(--critical)" id="sfKpiNuncaQtd">{fmt_int(sf['qtd_nunca_alugado'])}<span class="kpi-unit">equip.</span></div>
+      <div class="kpi-sub" id="sfKpiNuncaSub">{brl_m(sf['valor_nunca_alugado'])} investidos, sem faturamento registrado <span class="tag critical">atenção</span></div>
+    </div>
+    <div class="card">
+      <h3>Despesa Alta</h3>
+      <div class="kpi-value" style="color:var(--critical)" id="sfKpiDespAltaQtd">{fmt_int(sf['qtd_despesa_alta'])}<span class="kpi-unit">equip.</span></div>
+      <div class="kpi-sub">Despesas &ge; 50% do Faturamento acumulado <span class="tag critical">atenção</span></div>
+    </div>
+    <div class="card">
+      <h3>Sem Registro Financeiro</h3>
+      <div class="kpi-value" style="color:var(--warning)" id="sfKpiSemRegQtd">{fmt_int(sf['qtd_sem_registro_financeiro'])}<span class="kpi-unit">equip.</span></div>
+      <div class="kpi-sub">Não aparecem na planilha de Faturamento e Despesa por Equipamento</div>
+    </div>
+  </div>
+
+  <div style="margin-top:14px;">
+    {sf_nunca_card}
+  </div>
+
+  <div style="margin-top:14px;">
+    {sf_por_tipo_card}
+  </div>
+
+  <div style="margin-top:14px;">
+    {sf_tabela_card}
+  </div>
+
+  <div class="footer">
+    Saúde da Frota &middot; Eleva Brasil &middot; status/contagem ao vivo via API LOC1, Valor de Compra e Faturamento/Despesa atualizados quando as planilhas forem reenviadas.
+  </div>
+</div>
+<script type="application/json" id="sfRawData">{sf_raw_json}</script>
+"""
+
+# ---------------------------------------------------------------------------
 # Alertas
 # ---------------------------------------------------------------------------
 icon_map = {"critical": "🔴", "warning": "🟡", "good": "🟢"}
@@ -782,6 +1117,181 @@ JS = """
       aplicarFiltros();
     });
   }
+
+  var sfDataEl = document.getElementById('sfRawData');
+  if(sfDataEl){
+    var sfRaw = JSON.parse(sfDataEl.textContent);
+    var sfRows = Array.prototype.slice.call(document.querySelectorAll('#tabelaSaudeBody tr'));
+
+    function sfFmtInt(v){ return Math.round(v).toLocaleString('pt-BR'); }
+    function sfBrl(v){ return 'R$ ' + Math.round(v).toLocaleString('pt-BR'); }
+    function sfBrlM(v){
+      if(Math.abs(v) < 1000000){ return 'R$ ' + (v/1000).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1}) + ' K'; }
+      return 'R$ ' + (v/1000000).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' M';
+    }
+    function sfBrlM1(v){
+      if(Math.abs(v) < 1000000){ return 'R$' + (v/1000).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1}) + 'K'; }
+      return 'R$' + (v/1000000).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1}) + 'M';
+    }
+    function sfPct(v){ return v.toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1}) + '%'; }
+
+    function sfHbarSvg(rows, fmt, color){
+      var labelW = 210, chartW = 560, rowH = 27;
+      var vmax = 1;
+      rows.forEach(function(r){ if(r[1] > vmax) vmax = r[1]; });
+      var barArea = chartW - labelW - 70;
+      var h = rows.length * rowH + 6;
+      var parts = [];
+      rows.forEach(function(r, i){
+        var y = 6 + i * rowH;
+        var barW = Math.max((r[1] / vmax) * barArea, 2);
+        parts.push(
+          '<text x="' + (labelW - 10) + '" y="' + (y + 15) + '" text-anchor="end" font-size="11.5" fill="var(--ink-secondary)">' + r[0] + '</text>' +
+          '<rect x="' + labelW + '" y="' + (y + 4) + '" width="' + barW.toFixed(1) + '" height="16" rx="4" fill="' + color + '"></rect>' +
+          '<text x="' + (labelW + barW + 8).toFixed(1) + '" y="' + (y + 15) + '" font-size="11" font-weight="700" fill="var(--ink-primary)">' + fmt(r[1]) + '</text>'
+        );
+      });
+      return '<svg viewBox="0 0 ' + chartW + ' ' + h + '" width="100%" height="' + h + '">' + parts.join('') + '</svg>';
+    }
+
+    function sfVbarSvg(rows, fmt, color){
+      var w = 980, h = 190, padL = 10, padR = 10, padT = 20, padB = 26;
+      var plotW = w - padL - padR, plotH = h - padT - padB;
+      var n = Math.max(rows.length, 1);
+      var groupW = plotW / n, barW = groupW * 0.5;
+      var vmax = 1;
+      rows.forEach(function(r){ if(r[1] > vmax) vmax = r[1]; });
+      var parts = [];
+      rows.forEach(function(r, i){
+        var bx = padL + i * groupW + (groupW - barW) / 2;
+        var bh = (r[1] / vmax) * plotH;
+        var by = padT + (plotH - bh);
+        parts.push(
+          '<rect x="' + bx.toFixed(1) + '" y="' + by.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + Math.max(bh, 2).toFixed(1) + '" rx="3" fill="' + color + '"></rect>' +
+          '<text class="bar-value" x="' + (bx + barW / 2).toFixed(1) + '" y="' + Math.max(by - 6, 10).toFixed(1) + '" text-anchor="middle">' + fmt(r[1]) + '</text>' +
+          '<text class="axis-label" x="' + (bx + barW / 2).toFixed(1) + '" y="' + (h - 6) + '" text-anchor="middle">' + r[0] + '</text>'
+        );
+      });
+      return '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="' + h + '">' + parts.join('') + '</svg>';
+    }
+
+    var sfIdadeFaixas = [[0, 3, '0–2 anos'], [3, 6, '3–5 anos'], [6, 11, '6–10 anos'], [11, 16, '11–15 anos'], [16, 21, '16–20 anos'], [21, Infinity, '+20 anos']];
+    var sfStatusDot = {Disponivel: 'disp', 'Em Contrato': 'contr', 'Em Manutenção': 'manut'};
+
+    var sfTop = {
+      tipo: document.getElementById('sfTopTipo'),
+      modelo: document.getElementById('sfTopModelo'),
+      status: document.getElementById('sfTopStatus')
+    };
+    var sfTopContagem = document.getElementById('sfTopContagem');
+
+    function sfFiltered(){
+      var vTipo = sfTop.tipo.value, vModelo = sfTop.modelo.value, vStatus = sfTop.status.value;
+      return sfRaw.filter(function(e){
+        return (!vTipo || e.tipo === vTipo) && (!vModelo || e.modelo === vModelo) && (!vStatus || e.status === vStatus);
+      });
+    }
+
+    function sfRecompute(){
+      var rows = sfFiltered();
+      var n = rows.length;
+      var valorCompra = 0, fat = 0, desp = 0, idadeSum = 0, idadeN = 0;
+      var comValorCompra = 0, recuperou = 0, semRegistro = 0, despesaAlta = 0;
+      var nuncaAlugado = [];
+      var porTipo = {};
+      rows.forEach(function(e){
+        valorCompra += e.valor_compra;
+        fat += e.faturamento;
+        desp += e.despesas;
+        if(e.idade !== null){ idadeSum += e.idade; idadeN++; }
+        if(e.valor_compra > 0){
+          comValorCompra++;
+          if(e.faturamento >= e.valor_compra) recuperou++;
+        }
+        if(!e.tem_registro) semRegistro++;
+        if(e.faturamento > 0 && (e.despesas / e.faturamento) >= 0.5) despesaAlta++;
+        if(e.faturamento <= 0) nuncaAlugado.push(e);
+        if(!porTipo[e.tipo]) porTipo[e.tipo] = {tipo: e.tipo, total: 0, valor: 0, fat: 0, desp: 0};
+        var g = porTipo[e.tipo];
+        g.total++; g.valor += e.valor_compra; g.fat += e.faturamento; g.desp += e.despesas;
+      });
+      var lucro = fat - desp;
+      var lucroColor = lucro >= 0 ? 'var(--good)' : 'var(--critical)';
+
+      // Panorama
+      document.getElementById('sfPanoramaHint').textContent = sfFmtInt(n) + ' equipamentos · valores acumulados desde a origem das planilhas';
+      document.getElementById('sfKpiValor').textContent = sfBrlM(valorCompra);
+      document.getElementById('sfKpiFat').textContent = sfBrlM(fat);
+      document.getElementById('sfKpiDesp').textContent = sfBrlM(desp);
+      var kpiLucro = document.getElementById('sfKpiLucro');
+      kpiLucro.textContent = sfBrlM(lucro);
+      kpiLucro.style.color = lucroColor;
+      document.getElementById('sfKpiRoiMedio').textContent = valorCompra ? sfPct(lucro / valorCompra * 100) : '—';
+      document.getElementById('sfKpiIdade').textContent = idadeN ? (idadeSum / idadeN).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1}) + ' anos' : '—';
+
+      // Pontos de Atenção
+      document.getElementById('sfKpiRecuperouPct').textContent = comValorCompra ? sfPct(recuperou / comValorCompra * 100) : '—';
+      var valorNunca = nuncaAlugado.reduce(function(s, e){ return s + e.valor_compra; }, 0);
+      var nuncaDisp = nuncaAlugado.filter(function(e){ return e.status === 'Disponivel'; }).length;
+      document.getElementById('sfKpiNuncaQtd').innerHTML = sfFmtInt(nuncaAlugado.length) + '<span class="kpi-unit">equip.</span>';
+      document.getElementById('sfKpiNuncaSub').innerHTML = sfBrlM(valorNunca) + ' investidos, sem faturamento registrado <span class="tag critical">atenção</span>';
+      document.getElementById('sfKpiDespAltaQtd').innerHTML = sfFmtInt(despesaAlta) + '<span class="kpi-unit">equip.</span>';
+      document.getElementById('sfKpiSemRegQtd').innerHTML = sfFmtInt(semRegistro) + '<span class="kpi-unit">equip.</span>';
+
+      // Gráficos: composição, valor investido e idade
+      var tipoList = Object.keys(porTipo).map(function(k){ return porTipo[k]; });
+      var compRows = tipoList.slice().sort(function(a, b){ return b.total - a.total; }).map(function(g){ return [g.tipo, g.total]; });
+      var valorRows = tipoList.slice().sort(function(a, b){ return b.valor - a.valor; }).map(function(g){ return [g.tipo, g.valor]; });
+      document.getElementById('sfCompChartWrap').innerHTML = compRows.length ? sfHbarSvg(compRows, sfFmtInt, 'var(--neutral)') : '<span class="hint">Nenhum equipamento neste filtro.</span>';
+      document.getElementById('sfValorChartWrap').innerHTML = valorRows.length ? sfHbarSvg(valorRows, sfBrlM1, 'var(--status-contr)') : '<span class="hint">Nenhum equipamento neste filtro.</span>';
+
+      var idadeRows = sfIdadeFaixas.map(function(f){
+        var qtd = rows.filter(function(e){ return e.idade !== null && e.idade >= f[0] && e.idade < f[1]; }).length;
+        return [f[2], qtd];
+      });
+      document.getElementById('sfIdadeChartWrap').innerHTML = sfVbarSvg(idadeRows, sfFmtInt, 'var(--good)');
+
+      // Tabela "Nunca Geraram Faturamento" (top 15 por valor de compra)
+      nuncaAlugado.sort(function(a, b){ return b.valor_compra - a.valor_compra; });
+      var nuncaTop = nuncaAlugado.slice(0, 15);
+      document.getElementById('sfNuncaHint').textContent = sfFmtInt(nuncaAlugado.length) + ' no total (' + sfFmtInt(nuncaDisp) + ' disponíveis agora) · ' + sfBrlM(valorNunca) + ' em capital parado · os 15 de maior valor investido';
+      document.getElementById('sfNuncaTbody').innerHTML = nuncaTop.map(function(e){
+        var idadeTxt = e.idade !== null ? e.idade.toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1}) + ' anos' : '—';
+        var dot = sfStatusDot[e.status] || '';
+        return '<tr><td>' + e.patrimonio + '</td><td>' + e.modelo + '</td><td>' + e.tipo + '</td>' +
+          '<td><i class="dot ' + dot + '"></i>' + e.status + '</td><td>' + idadeTxt + '</td><td>' + sfBrl(e.valor_compra) + '</td></tr>';
+      }).join('') || '<tr><td colspan="6">Nenhum equipamento neste filtro.</td></tr>';
+
+      // Tabela "Saúde da Frota por Tipo de Equipamento" (ordenada por valor investido)
+      var tipoOrdenado = tipoList.slice().sort(function(a, b){ return b.valor - a.valor; });
+      document.getElementById('sfTipoTbody').innerHTML = tipoOrdenado.map(function(g){
+        var gLucro = g.fat - g.desp;
+        var roi = g.valor > 0 ? gLucro / g.valor * 100 : null;
+        var roiTxt = roi !== null ? sfPct(roi) : '—';
+        var roiCls = (roi || 0) >= 0 ? 'num-good' : 'num-crit';
+        return '<tr><td>' + g.tipo + '</td><td>' + sfFmtInt(g.total) + '</td><td>' + sfBrl(g.valor) + '</td><td>' + sfBrl(g.fat) + '</td>' +
+          '<td>' + sfBrl(g.desp) + '</td><td>' + sfBrl(gLucro) + '</td><td class="' + roiCls + '">' + roiTxt + '</td></tr>';
+      }).join('') || '<tr><td colspan="7">Nenhum equipamento neste filtro.</td></tr>';
+
+      // Tabela "Cadastro Completo": mostra/oculta linhas já renderizadas
+      var vTipo = sfTop.tipo.value, vModelo = sfTop.modelo.value, vStatus = sfTop.status.value;
+      sfRows.forEach(function(tr){
+        var ok = (!vTipo || tr.getAttribute('data-tipo') === vTipo)
+              && (!vModelo || tr.getAttribute('data-modelo') === vModelo)
+              && (!vStatus || tr.getAttribute('data-status') === vStatus);
+        tr.classList.toggle('filtro-oculto', !ok);
+      });
+      document.getElementById('sfCadastroHint').textContent = sfFmtInt(n) + ' de ' + sfFmtInt(sfRaw.length) + ' equipamentos · ordenado por Lucro Acumulado · role para ver todos';
+      sfTopContagem.textContent = sfFmtInt(n) + ' de ' + sfFmtInt(sfRaw.length) + ' equipamentos selecionados';
+    }
+
+    Object.keys(sfTop).forEach(function(k){ sfTop[k].addEventListener('change', sfRecompute); });
+    var sfTopLimpar = document.getElementById('sfTopLimpar');
+    if(sfTopLimpar) sfTopLimpar.addEventListener('click', function(){
+      Object.keys(sfTop).forEach(function(k){ sfTop[k].value = ''; });
+      sfRecompute();
+    });
+  }
 })();
 </script>
 """
@@ -804,6 +1314,7 @@ html = f"""<!doctype html>
     </div>
     <button class="tab-btn active" data-tab="exec">Visão Executiva</button>
     <button class="tab-btn" data-tab="af">Ocupação da Frota</button>
+    <button class="tab-btn" data-tab="saude">Saúde da Frota</button>
   </nav>
   <button class="sidebar-toggle sidebar-toggle-open" id="sidebarExpand" title="Mostrar menu" aria-label="Mostrar menu">&raquo;</button>
   <div class="app-main">
@@ -843,6 +1354,10 @@ html = f"""<!doctype html>
 
     <div id="tab-af" class="tab-page">
       {af_page}
+    </div>
+
+    <div id="tab-saude" class="tab-page">
+      {sf_page}
     </div>
 
   </div>

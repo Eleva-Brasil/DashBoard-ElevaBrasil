@@ -2,14 +2,19 @@
 # -*- coding: utf-8 -*-
 """
 Roda LOCALMENTE com a planilha real de Ativo Fixo (tem só código de
-equipamento e valor - sem dado de cliente, então é seguro publicar).
-Gera valor_aquisicao_mapping.csv: Nº do item + Nº de série -> Valor de Compra.
+equipamento, datas e valor - sem dado de cliente, então é seguro publicar).
+Gera valor_aquisicao_mapping.csv: Nº de série (AF/patrimônio) -> Valor de
+Compra + Data de Compra (usada para calcular idade de operação na aba Saúde
+da Frota). Quando "Data de Compra" não vem preenchida, usa "Data de ano"
+(ano de fabricação) como aproximação.
 
 O status/contagem de máquinas continua vindo ao vivo da API (mesma fonte do
-dashboard de Frota); esta planilha só acrescenta o valor de aquisição.
+dashboard de Frota); esta planilha só acrescenta valor e data de aquisição.
+O join com o status ao vivo é feito só por "Nº de série" (AF) - esta
+planilha não traz "Nº do item" (ItemCode do SAP).
 
 Uso:
-    python3 update_ativo_fixo_manual.py "Ativo Fixo 27-08.xlsx"
+    python3 update_ativo_fixo_manual.py "Ativo - Fixo - Eleva.xlsx"
 """
 import sys
 from pathlib import Path
@@ -40,17 +45,20 @@ def parse_valor(v):
 
 
 def main():
-    path = sys.argv[1] if len(sys.argv) > 1 else BASE / "Ativo Fixo.xlsx"
+    path = sys.argv[1] if len(sys.argv) > 1 else BASE / "Ativo - Fixo - Eleva.xlsx"
     df = pd.read_excel(path)
 
-    out = df[["Nº do item", "AF", "Valor de Compra"]].rename(columns={"AF": "Nº de série"})
-    out["Valor de Compra"] = out["Valor de Compra"].apply(parse_valor)
-    out = out.drop_duplicates(subset=["Nº do item", "Nº de série"])
+    out = df[["AF", "Valor de Compra"]].rename(columns={"AF": "Nº de série"})
+    out["Valor de Compra"] = df["Valor de Compra"].apply(parse_valor)
+    out["Data de Compra"] = df["Data de Compra"].fillna(df["Data de ano"])
+    out["Data de Compra"] = pd.to_datetime(out["Data de Compra"]).dt.strftime("%Y-%m-%d")
+    out = out.drop_duplicates(subset=["Nº de série"])
 
     out.to_csv(OUT_FILE, index=False)
 
     sem_valor = (out["Valor de Compra"] <= 0).sum()
-    print(f"{OUT_FILE} gerado. {len(out)} equipamentos, {sem_valor} sem valor de compra registrado.")
+    sem_data = out["Data de Compra"].isna().sum()
+    print(f"{OUT_FILE} gerado. {len(out)} equipamentos, {sem_valor} sem valor de compra, {sem_data} sem data de compra/fabricação.")
     print(f"Valor total: R$ {out['Valor de Compra'].sum():,.2f}")
 
 

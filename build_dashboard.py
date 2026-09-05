@@ -95,7 +95,7 @@ if FONTE_DADOS == "api":
     })
 else:
     status = pd.read_excel(STATUS_FILE)
-    occ = pd.read_excel(OCC_FILE)
+    occ = pd.read_excel(OCC_FILE).dropna(subset=["Tipo do Modelo"])
     # A planilha .xlsx usa nomes de coluna abreviados mais antigos; o restante
     # do script já foi escrito para os nomes completos (iguais à query SQL).
     occ = occ.rename(columns={
@@ -237,8 +237,8 @@ for _, r in disponiveis_df.iterrows():
 #    update_ativo_fixo_manual.py - só tem código de equipamento e valor,
 #    sem dado de cliente, por isso pode ficar no repositório público).
 # ---------------------------------------------------------------------------
-valores_af = pd.read_csv(BASE / "valor_aquisicao_mapping.csv", dtype={"Nº do item": str, "Nº de série": str})
-status_af = status.merge(valores_af, on=["Nº do item", "Nº de série"], how="left")
+valores_af = pd.read_csv(BASE / "valor_aquisicao_mapping.csv", dtype={"Nº de série": str})
+status_af = status.merge(valores_af, on="Nº de série", how="left")
 status_af["Valor de Compra"] = status_af["Valor de Compra"].fillna(0.0)
 
 sem_registro = status_af[status_af["Valor de Compra"] <= 0]
@@ -289,6 +289,147 @@ for _, r in af_piv.iterrows():
         "contrato": int(r["Em Contrato"]),
         "manutencao": int(r["Em Manutenção"]),
         "valor": float(r["Valor"]),
+    })
+
+# ---------------------------------------------------------------------------
+# 3d) SAÚDE DA FROTA (por equipamento)
+#    Cruza status ao vivo + Valor de Compra/Data de Compra (já unidos acima,
+#    em status_af) com Faturamento e Despesas acumulados por equipamento -
+#    planilha manual separada (faturamento_despesa_equipamento.csv, gerada
+#    por update_faturamento_despesa_equipamento.py a partir da planilha
+#    "Faturamento e Despesa por Equipamento" - só tem código de equipamento
+#    e valores agregados, sem nome de cliente ou CNPJ, por isso pode ficar
+#    no repositório público).
+# ---------------------------------------------------------------------------
+fd_equip = pd.read_csv(BASE / "faturamento_despesa_equipamento.csv", dtype={"Nº de série": str})
+saude = status_af.merge(fd_equip, on="Nº de série", how="left")
+saude["tem_registro_financeiro"] = saude["Faturamento Acumulado"].notna()
+saude["Faturamento Acumulado"] = saude["Faturamento Acumulado"].fillna(0.0)
+saude["Despesas Acumuladas"] = saude["Despesas Acumuladas"].fillna(0.0)
+saude["Lucro Acumulado"] = saude["Faturamento Acumulado"] - saude["Despesas Acumuladas"]
+
+data_compra = pd.to_datetime(saude["Data de Compra"], errors="coerce")
+saude["Idade (anos)"] = (HOJE - data_compra).dt.days / 365.25
+
+
+def _roi(row):
+    return row["Lucro Acumulado"] / row["Valor de Compra"] * 100 if row["Valor de Compra"] > 0 else None
+
+
+def _despesa_pct(row):
+    return row["Despesas Acumuladas"] / row["Faturamento Acumulado"] * 100 if row["Faturamento Acumulado"] > 0 else None
+
+
+saude["ROI (%)"] = saude.apply(_roi, axis=1)
+saude["Despesa/Faturamento (%)"] = saude.apply(_despesa_pct, axis=1)
+saude["recuperou_investimento"] = saude["Valor de Compra"].gt(0) & saude["Faturamento Acumulado"].ge(saude["Valor de Compra"])
+
+fat_saude_total = float(saude["Faturamento Acumulado"].sum())
+desp_saude_total = float(saude["Despesas Acumuladas"].sum())
+lucro_saude_total = fat_saude_total - desp_saude_total
+valor_compra_saude_total = float(saude["Valor de Compra"].sum())
+com_valor_compra = saude[saude["Valor de Compra"] > 0]
+sem_registro_fin = saude[~saude["tem_registro_financeiro"]]
+despesa_alta = saude[(saude["Faturamento Acumulado"] > 0) & (saude["Despesa/Faturamento (%)"] >= 50)]
+nao_recuperou = com_valor_compra[(~com_valor_compra["recuperou_investimento"]) & (com_valor_compra["Idade (anos)"] >= 3)]
+# "nunca alugado" = nenhum faturamento acumulado registrado (nem 0 explícito, nem
+# ausência na planilha) - é o maior sinal de capital parado por equipamento.
+nunca_alugado = saude[saude["Faturamento Acumulado"] <= 0]
+
+saude_frota = {
+    "gerado_em": AGORA_BR.strftime("%d/%m/%Y %H:%M"),
+    "total_equipamentos": len(saude),
+    "valor_compra_total": valor_compra_saude_total,
+    "faturamento_acumulado_total": fat_saude_total,
+    "despesas_acumuladas_total": desp_saude_total,
+    "lucro_acumulado_total": lucro_saude_total,
+    "roi_medio_pct": (lucro_saude_total / valor_compra_saude_total * 100) if valor_compra_saude_total else 0.0,
+    "pct_recuperou_investimento": (com_valor_compra["recuperou_investimento"].sum() / len(com_valor_compra) * 100) if len(com_valor_compra) else 0.0,
+    "idade_media_anos": float(saude["Idade (anos)"].mean(skipna=True)) if saude["Idade (anos)"].notna().any() else None,
+    "qtd_sem_registro_financeiro": int(len(sem_registro_fin)),
+    "qtd_despesa_alta": int(len(despesa_alta)),
+    "qtd_nao_recuperou": int(len(nao_recuperou)),
+    "qtd_nunca_alugado": int(len(nunca_alugado)),
+    "qtd_nunca_alugado_disponivel": int((nunca_alugado["Status"] == "Disponivel").sum()),
+    "valor_nunca_alugado": float(nunca_alugado["Valor de Compra"].sum()),
+}
+
+# Buckets de idade da frota (histograma) - só equipamentos com data conhecida.
+# Limites em "meio aberto" ([lo, hi)) pra não perder idades fracionárias (ex:
+# 2,5 anos) que cairiam num buraco entre faixas com limites inteiros fechados.
+_faixas_idade = [(0, 3, "0–2 anos"), (3, 6, "3–5 anos"), (6, 11, "6–10 anos"),
+                  (11, 16, "11–15 anos"), (16, 21, "16–20 anos"), (21, float("inf"), "+20 anos")]
+saude_idade_hist = []
+idades_validas = saude["Idade (anos)"].dropna()
+for lo, hi, label in _faixas_idade:
+    qtd = int(((idades_validas >= lo) & (idades_validas < hi)).sum())
+    saude_idade_hist.append({"faixa": label, "qtd": qtd})
+
+# Lista para o alerta "nunca alugado" - maior valor de compra parado primeiro.
+saude_nunca_alugado_lista = []
+for _, r in nunca_alugado.sort_values("Valor de Compra", ascending=False).head(15).iterrows():
+    saude_nunca_alugado_lista.append({
+        "patrimonio": r["Nº de série"],
+        "modelo": r["Modelo"],
+        "tipo": r["Tipo do Modelo"],
+        "status": r["Status"],
+        "idade_anos": round(r["Idade (anos)"], 1) if pd.notna(r["Idade (anos)"]) else None,
+        "valor_compra": float(r["Valor de Compra"]),
+    })
+
+saude_por_tipo_rows = []
+for tipo, grupo in saude.groupby("Tipo do Modelo"):
+    v_compra = float(grupo["Valor de Compra"].sum())
+    fat = float(grupo["Faturamento Acumulado"].sum())
+    desp = float(grupo["Despesas Acumuladas"].sum())
+    lucro = fat - desp
+    saude_por_tipo_rows.append({
+        "tipo": tipo,
+        "total": len(grupo),
+        "valor_compra": v_compra,
+        "faturamento": fat,
+        "despesas": desp,
+        "lucro": lucro,
+        "roi_pct": (lucro / v_compra * 100) if v_compra else None,
+    })
+saude_por_tipo = sorted(saude_por_tipo_rows, key=lambda r: r["valor_compra"], reverse=True)
+
+saude_tabela = []
+for _, r in saude.sort_values("Lucro Acumulado", ascending=False).iterrows():
+    saude_tabela.append({
+        "patrimonio": r["Nº de série"],
+        "modelo": r["Modelo"],
+        "tipo": r["Tipo do Modelo"],
+        "status": r["Status"],
+        "idade_anos": round(r["Idade (anos)"], 1) if pd.notna(r["Idade (anos)"]) else None,
+        "valor_compra": float(r["Valor de Compra"]),
+        "faturamento": float(r["Faturamento Acumulado"]),
+        "despesas": float(r["Despesas Acumuladas"]),
+        "lucro": float(r["Lucro Acumulado"]),
+        "roi_pct": round(r["ROI (%)"], 1) if pd.notna(r["ROI (%)"]) else None,
+        "tem_registro_financeiro": bool(r["tem_registro_financeiro"]),
+    })
+
+if fat_saude_total > 0 and faturamento.get("ytd_liquido"):
+    _diff_pct = abs(fat_saude_total - faturamento["ytd_liquido"]) / faturamento["ytd_liquido"] * 100
+    if _diff_pct > 20:
+        quality_notes.append({
+            "icon": "🟡",
+            "title": "Faturamento por Equipamento não bate com o Faturamento oficial",
+            "detail": f"A soma do Faturamento Acumulado por equipamento na aba Saúde da Frota (R$ {fat_saude_total:,.2f}) "
+                      f"é {_diff_pct:.0f}% diferente do Faturamento líquido oficial (YTD, R$ {faturamento['ytd_liquido']:,.2f}). "
+                      "Combinado com a Eleva: os dois deveriam olhar o mesmo período - a diferença pode indicar um ajuste "
+                      "necessário na query de origem dessa planilha. Tratar os números desta aba como direcionais até "
+                      "essa diferença ser explicada."
+        })
+
+if saude_frota["qtd_sem_registro_financeiro"] > 0:
+    quality_notes.append({
+        "icon": "🟡",
+        "title": "Equipamentos sem Faturamento/Despesa registrado",
+        "detail": f"{saude_frota['qtd_sem_registro_financeiro']} de {saude_frota['total_equipamentos']} equipamentos não "
+                  "aparecem na planilha de Faturamento e Despesa por Equipamento (entram na aba Saúde da Frota com "
+                  "R$ 0,00 nesses campos, mas continuam contados normalmente na Frota e no Valor de Compra)."
     })
 
 # ---------------------------------------------------------------------------
@@ -375,6 +516,11 @@ data = {
     "potencial": potencial,
     "ativo_fixo": ativo_fixo,
     "ativo_fixo_tipos": ativo_fixo_tipos,
+    "saude_frota": saude_frota,
+    "saude_por_tipo": saude_por_tipo,
+    "saude_tabela": saude_tabela,
+    "saude_idade_hist": saude_idade_hist,
+    "saude_nunca_alugado_lista": saude_nunca_alugado_lista,
     "faturamento": faturamento,
     "serie_mensal": serie_json,
     "comparativo_anual": comparativo_anual,
