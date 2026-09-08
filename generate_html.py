@@ -823,7 +823,7 @@ for e in sf_tabela:
     idade_txt = f"{e['idade_anos']:.1f} anos".replace(".", ",") if e["idade_anos"] is not None else "—"
     tipo_title = e['tipo'].title()
     registro_flag = "" if e["tem_registro_financeiro"] else '<span class="tag warning">sem registro</span>'
-    sf_rows.append(f"""<tr data-modelo="{e['modelo']}" data-tipo="{tipo_title}" data-status="{e['status']}">
+    sf_rows.append(f"""<tr data-patrimonio="{e['patrimonio']}" data-modelo="{e['modelo']}" data-tipo="{tipo_title}" data-status="{e['status']}">
       <td>{e['patrimonio']}</td>
       <td>{e['modelo']}</td>
       <td>{tipo_title}</td>
@@ -874,8 +874,9 @@ sf_raw_json = json.dumps([
 sf_filtro_card = f"""
 <div class="table-card" style="margin-bottom:14px;">
   <h3>Filtrar Frota</h3>
-  <span class="hint">Selecione Tipo, Modelo e/ou Status - todos os números, gráficos e tabelas desta página recalculam na hora</span>
+  <span class="hint">Selecione Tipo, Modelo, Status e/ou busque por Patrimônio - todos os números, gráficos e tabelas desta página recalculam na hora</span>
   <div class="filter-row" style="margin-top:10px;">
+    <input class="filter-select" style="cursor:text;" type="text" id="sfTopPatrimonio" placeholder="Patrimônio (ex: MT292)" autocomplete="off" />
     <select class="filter-select" id="sfTopTipo">
       <option value="">Tipo (todos)</option>
       {sf_tipo_opts}
@@ -1210,12 +1211,15 @@ JS = """
       modelo: document.getElementById('sfTopModelo'),
       status: document.getElementById('sfTopStatus')
     };
+    var sfTopPatrimonio = document.getElementById('sfTopPatrimonio');
     var sfTopContagem = document.getElementById('sfTopContagem');
 
     function sfFiltered(){
       var vTipo = sfTop.tipo.value, vModelo = sfTop.modelo.value, vStatus = sfTop.status.value;
+      var vPatrimonio = sfTopPatrimonio.value.trim().toUpperCase();
       return sfRaw.filter(function(e){
-        return (!vTipo || e.tipo === vTipo) && (!vModelo || e.modelo === vModelo) && (!vStatus || e.status === vStatus);
+        return (!vTipo || e.tipo === vTipo) && (!vModelo || e.modelo === vModelo) && (!vStatus || e.status === vStatus)
+            && (!vPatrimonio || e.patrimonio.toUpperCase().indexOf(vPatrimonio) !== -1);
       });
     }
 
@@ -1321,10 +1325,12 @@ JS = """
 
       // Tabela "Cadastro Completo": mostra/oculta linhas já renderizadas
       var vTipo = sfTop.tipo.value, vModelo = sfTop.modelo.value, vStatus = sfTop.status.value;
+      var vPatrimonio = sfTopPatrimonio.value.trim().toUpperCase();
       sfRows.forEach(function(tr){
         var ok = (!vTipo || tr.getAttribute('data-tipo') === vTipo)
               && (!vModelo || tr.getAttribute('data-modelo') === vModelo)
-              && (!vStatus || tr.getAttribute('data-status') === vStatus);
+              && (!vStatus || tr.getAttribute('data-status') === vStatus)
+              && (!vPatrimonio || tr.getAttribute('data-patrimonio').toUpperCase().indexOf(vPatrimonio) !== -1);
         tr.classList.toggle('filtro-oculto', !ok);
       });
       document.getElementById('sfCadastroHint').textContent = sfFmtInt(n) + ' de ' + sfFmtInt(sfRaw.length) + ' equipamentos · ordenado por Lucro Acumulado · role para ver todos';
@@ -1332,9 +1338,11 @@ JS = """
     }
 
     Object.keys(sfTop).forEach(function(k){ sfTop[k].addEventListener('change', sfRecompute); });
+    sfTopPatrimonio.addEventListener('input', sfRecompute);
     var sfTopLimpar = document.getElementById('sfTopLimpar');
     if(sfTopLimpar) sfTopLimpar.addEventListener('click', function(){
       Object.keys(sfTop).forEach(function(k){ sfTop[k].value = ''; });
+      sfTopPatrimonio.value = '';
       sfRecompute();
     });
   }
