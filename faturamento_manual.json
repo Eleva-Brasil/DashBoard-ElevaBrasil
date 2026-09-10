@@ -1,5 +1,5 @@
 {
-  "hoje_efetivo": "2026-09-08",
+  "hoje_efetivo": "2026-09-09",
   "quality_notes": [
     {
       "icon": "🟡",
@@ -33,19 +33,19 @@
     }
   ],
   "faturamento": {
-    "ytd_liquido": 46492026.57,
-    "ytd_liquido_ant": 52320637.45,
-    "ytd_var_pct": -11.140175586679524,
-    "ytd_bruto": 46492026.57,
+    "ytd_liquido": 46743972.11,
+    "ytd_liquido_ant": 52359273.57,
+    "ytd_var_pct": -10.72455952333412,
+    "ytd_bruto": 46743972.11,
     "ytd_deducoes": 0.0,
-    "mtd_liquido": 1245702.16,
-    "mtd_liquido_ant": 1030052.6,
-    "mtd_var_pct": 20.935781337768567,
+    "mtd_liquido": 1497647.6999999997,
+    "mtd_liquido_ant": 1068688.72,
+    "mtd_var_pct": 40.13881422833767,
     "mes_fechado_label": "ago/26",
     "mes_fechado_liquido": 5886725.99,
     "mes_fechado_liquido_ant": 6039533.7700000005,
     "mes_fechado_var_pct": -2.5301254338379264,
-    "corte_label": "08/09/2026"
+    "corte_label": "09/09/2026"
   },
   "serie_mensal": [
     {
@@ -142,7 +142,7 @@
     },
     {
       "mes": "2026-09",
-      "valor": 1245702.16
+      "valor": 1497647.7
     }
   ],
   "comparativo_anual": {
@@ -200,7 +200,7 @@
       {
         "mes": 9,
         "mes_label": "set",
-        "atual": 1245702.16,
+        "atual": 1497647.7,
         "anterior": 5697370.38
       },
       {
@@ -223,15 +223,15 @@
       }
     ],
     "total_ano_anterior_completo": 74264644.22000001,
-    "ytd_atual": 46492026.57,
-    "ytd_anterior_mesmo_periodo": 52320637.45,
-    "projecao_fechamento_ano": 67607927.08386454,
-    "projecao_vs_ano_anterior_pct": -8.963507744567867
+    "ytd_atual": 46743972.11,
+    "ytd_anterior_mesmo_periodo": 52359273.57,
+    "projecao_fechamento_ano": 67704562.77837302,
+    "projecao_vs_ano_anterior_pct": -8.833384325108396
   },
   "alertas": [
     {
       "nivel": "warning",
-      "texto": "Faturamento líquido acumulado no ano caiu 11.1% vs. mesmo período de 2025 (R$ 46.492.027 vs R$ 52.320.637)."
+      "texto": "Faturamento líquido acumulado no ano caiu 10.7% vs. mesmo período de 2025 (R$ 46.743.972 vs R$ 52.359.274)."
     }
   ]
 }
