@@ -57,6 +57,23 @@ def fmt_int(v):
     return f"{v:,.0f}".replace(",", ".")
 
 
+def multiselect_html(elem_id, label, options):
+    """Filtro de seleção múltipla (botão + painel com checkboxes e busca).
+    O JS (wireMultiSelect, no bloco <script> final) liga o comportamento -
+    aqui só o HTML/estado inicial (nada selecionado = "todos")."""
+    opts_html = "".join(f'<label class="ms-option"><input type="checkbox" value="{o}"/><span>{o}</span></label>' for o in options)
+    if not options:
+        opts_html = '<div class="ms-empty">Nenhuma opção disponível.</div>'
+    return f"""<div class="ms-wrap" id="{elem_id}">
+      <button type="button" class="ms-btn" data-label="{label}">{label} (todos)</button>
+      <div class="ms-panel">
+        <input type="text" class="ms-search" placeholder="Buscar {label.lower()}..." />
+        <div class="ms-actions"><a data-act="all">Marcar todos</a><a data-act="none">Limpar</a></div>
+        <div class="ms-options">{opts_html}</div>
+      </div>
+    </div>"""
+
+
 def delta_html(var_pct, favor_up=True):
     """Retorna HTML de seta+percentual, verde se favorável, vermelho se desfavorável."""
     if var_pct is None:
@@ -246,6 +263,28 @@ body{
 .filter-clear{ font-size:12px; padding:6px 12px; border-radius:8px; border:1px solid var(--hairline); background:#fff; color:var(--ink-secondary); font-family:inherit; cursor:pointer; }
 .filter-clear:hover{ background:#f1f3f6; }
 tr.filtro-oculto{ display:none; }
+
+/* filtro de seleção múltipla (checkbox dropdown) */
+.ms-wrap{ position:relative; }
+.ms-btn{ font-size:12px; padding:6px 26px 6px 10px; border-radius:8px; border:1px solid var(--hairline); background:#fafbfd; color:var(--ink-primary); font-family:inherit; cursor:pointer; white-space:nowrap; position:relative; }
+.ms-btn:after{ content:'\25BE'; position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:10px; color:var(--ink-muted); }
+.ms-btn:hover{ background:#f1f3f6; }
+.ms-btn.active{ border-color:var(--neutral); color:var(--neutral); }
+.ms-panel{ display:none; position:absolute; top:calc(100% + 5px); left:0; z-index:30; background:#fff; border:1px solid var(--hairline); border-radius:10px; box-shadow:var(--shadow); padding:8px; width:240px; }
+.ms-panel.open{ display:block; }
+.ms-search{ width:100%; box-sizing:border-box; padding:6px 8px; margin-bottom:6px; border:1px solid var(--hairline); border-radius:6px; font-size:12px; font-family:inherit; color:var(--ink-primary); }
+.ms-actions{ display:flex; justify-content:space-between; font-size:11px; margin-bottom:6px; }
+.ms-actions a{ color:var(--neutral); text-decoration:none; cursor:pointer; }
+.ms-actions a:hover{ text-decoration:underline; }
+.ms-options{ max-height:220px; overflow-y:auto; }
+.ms-option{ display:flex; align-items:center; gap:7px; padding:5px 4px; font-size:12.5px; color:var(--ink-primary); cursor:pointer; border-radius:5px; }
+.ms-option:hover{ background:#f4f6f9; }
+.ms-option input{ margin:0; accent-color:var(--neutral); flex-shrink:0; }
+.ms-option span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ms-empty{ font-size:12px; color:var(--ink-muted); padding:6px 4px; }
+@media (max-width:520px){
+  .ms-panel{ position:fixed; left:12px; right:12px; top:auto; width:auto; max-height:60vh; }
+}
 .tbl-scroll{ max-height:430px; overflow-y:auto; overflow-x:auto; -webkit-overflow-scrolling:touch; border-top:1px solid var(--hairline); }
 table{ width:100%; min-width:640px; border-collapse:collapse; font-size:12.5px; }
 .table-narrow table{ min-width:0; }
@@ -550,27 +589,14 @@ modelos_unicos = sorted({m['modelo'] for m in modelos})
 tipos_unicos = sorted({m['tipo'].title() for m in modelos})
 obs_unicas = ["Manutenção crítica", "Capital parado", "Alta demanda", "Sem observação"]
 
-modelo_opts = "".join(f'<option value="{v}">{v}</option>' for v in modelos_unicos)
-tipo_opts = "".join(f'<option value="{v}">{v}</option>' for v in tipos_unicos)
-obs_opts = "".join(f'<option value="{v}">{v}</option>' for v in obs_unicas)
-
 modelos_table_card = f"""
 <div class="table-card">
   <h3>Disponibilidade por Modelo</h3>
-  <span class="hint">{len(modelos)} modelos &middot; ordenado por total de equipamentos &middot; role para ver todos</span>
+  <span class="hint">{len(modelos)} modelos &middot; ordenado por total de equipamentos &middot; role para ver todos &middot; filtros permitem selecionar mais de um valor</span>
   <div class="filter-row">
-    <select class="filter-select" id="filtroModelo" data-col="modelo">
-      <option value="">Modelo (todos)</option>
-      {modelo_opts}
-    </select>
-    <select class="filter-select" id="filtroTipo" data-col="tipo">
-      <option value="">Tipo (todos)</option>
-      {tipo_opts}
-    </select>
-    <select class="filter-select" id="filtroObs" data-col="obs">
-      <option value="">Observação (todas)</option>
-      {obs_opts}
-    </select>
+    {multiselect_html('filtroModelo', 'Modelo', modelos_unicos)}
+    {multiselect_html('filtroTipo', 'Tipo', tipos_unicos)}
+    {multiselect_html('filtroObs', 'Observação', obs_unicas)}
     <button class="filter-clear" id="filtroLimpar" type="button">Limpar</button>
     <span class="hint" id="filtroContagem"></span>
   </div>
@@ -840,9 +866,6 @@ for e in sf_tabela:
 sf_modelos_unicos = sorted({e['modelo'] for e in sf_tabela})
 sf_tipos_unicos = sorted({e['tipo'].title() for e in sf_tabela})
 sf_status_unicos = ["Disponivel", "Em Contrato", "Em Manutenção"]
-sf_modelo_opts = "".join(f'<option value="{v}">{v}</option>' for v in sf_modelos_unicos)
-sf_tipo_opts = "".join(f'<option value="{v}">{v}</option>' for v in sf_tipos_unicos)
-sf_status_opts = "".join(f'<option value="{v}">{v}</option>' for v in sf_status_unicos)
 
 sf_tabela_card = f"""
 <div class="table-card">
@@ -874,21 +897,12 @@ sf_raw_json = json.dumps([
 sf_filtro_card = f"""
 <div class="table-card" style="margin-bottom:14px;">
   <h3>Filtrar Frota</h3>
-  <span class="hint">Selecione Tipo, Modelo, Status e/ou busque por Patrimônio - todos os números, gráficos e tabelas desta página recalculam na hora</span>
+  <span class="hint">Selecione um ou mais valores de Tipo, Modelo e/ou Status, e/ou busque por Patrimônio - todos os números, gráficos e tabelas desta página recalculam na hora</span>
   <div class="filter-row" style="margin-top:10px;">
     <input class="filter-select" style="cursor:text;" type="text" id="sfTopPatrimonio" placeholder="Patrimônio (ex: MT292)" autocomplete="off" />
-    <select class="filter-select" id="sfTopTipo">
-      <option value="">Tipo (todos)</option>
-      {sf_tipo_opts}
-    </select>
-    <select class="filter-select" id="sfTopModelo">
-      <option value="">Modelo (todos)</option>
-      {sf_modelo_opts}
-    </select>
-    <select class="filter-select" id="sfTopStatus">
-      <option value="">Status (todos)</option>
-      {sf_status_opts}
-    </select>
+    {multiselect_html('sfTopTipo', 'Tipo', sf_tipos_unicos)}
+    {multiselect_html('sfTopModelo', 'Modelo', sf_modelos_unicos)}
+    {multiselect_html('sfTopStatus', 'Status', sf_status_unicos)}
     <button class="filter-clear" id="sfTopLimpar" type="button">Limpar filtros</button>
     <span class="hint" id="sfTopContagem">{len(sf_tabela)} de {len(sf_tabela)} equipamentos selecionados</span>
   </div>
@@ -1117,32 +1131,93 @@ JS = """
     if(localStorage.getItem('eleva_sidebar_collapsed') === '1') setCollapsed(true);
   }catch(e){}
 
+  // Filtro de seleção múltipla (checkbox dropdown) - usado tanto na tabela
+  // "Disponibilidade por Modelo" quanto no filtro global da Saúde da Frota.
+  // Liga o comportamento a um bloco já renderizado por multiselect_html() em
+  // generate_html.py: botão que abre um painel com busca + checkboxes.
+  function wireMultiSelect(id, onChange){
+    var wrap = document.getElementById(id);
+    if(!wrap) return null;
+    var btn = wrap.querySelector('.ms-btn');
+    var panel = wrap.querySelector('.ms-panel');
+    var search = wrap.querySelector('.ms-search');
+    var checkboxes = Array.prototype.slice.call(wrap.querySelectorAll('.ms-options input[type=checkbox]'));
+    var label = btn.getAttribute('data-label');
+    var selected = new Set();
+
+    function updateBtn(){
+      btn.classList.toggle('active', selected.size > 0);
+      if(selected.size === 0) btn.textContent = label + ' (todos)';
+      else if(selected.size === 1) btn.textContent = label + ': ' + Array.from(selected)[0];
+      else btn.textContent = label + ' (' + selected.size + ' selecionados)';
+    }
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      var wasOpen = panel.classList.contains('open');
+      document.querySelectorAll('.ms-panel.open').forEach(function(p){ p.classList.remove('open'); });
+      if(!wasOpen) panel.classList.add('open');
+    });
+    panel.addEventListener('click', function(e){ e.stopPropagation(); });
+    checkboxes.forEach(function(cb){
+      cb.addEventListener('change', function(){
+        if(cb.checked) selected.add(cb.value); else selected.delete(cb.value);
+        updateBtn();
+        onChange();
+      });
+    });
+    var actAll = wrap.querySelector('[data-act="all"]');
+    var actNone = wrap.querySelector('[data-act="none"]');
+    if(actAll) actAll.addEventListener('click', function(e){
+      e.preventDefault();
+      checkboxes.forEach(function(cb){ if(cb.parentElement.style.display !== 'none'){ cb.checked = true; selected.add(cb.value); } });
+      updateBtn(); onChange();
+    });
+    if(actNone) actNone.addEventListener('click', function(e){
+      e.preventDefault();
+      checkboxes.forEach(function(cb){ cb.checked = false; });
+      selected.clear();
+      updateBtn(); onChange();
+    });
+    if(search) search.addEventListener('input', function(){
+      var q = search.value.toLowerCase();
+      checkboxes.forEach(function(cb){
+        var lbl = cb.parentElement;
+        lbl.style.display = lbl.textContent.toLowerCase().indexOf(q) !== -1 ? '' : 'none';
+      });
+    });
+
+    return {
+      getSelected: function(){ return selected; },
+      clear: function(){ checkboxes.forEach(function(cb){ cb.checked = false; }); selected.clear(); updateBtn(); }
+    };
+  }
+  document.addEventListener('click', function(){
+    document.querySelectorAll('.ms-panel.open').forEach(function(p){ p.classList.remove('open'); });
+  });
+
   var tabela = document.getElementById('tabelaModelos');
   if(tabela){
-    var selects = [
-      document.getElementById('filtroModelo'),
-      document.getElementById('filtroTipo'),
-      document.getElementById('filtroObs')
-    ];
     var contagem = document.getElementById('filtroContagem');
     var linhas = Array.prototype.slice.call(tabela.querySelectorAll('tbody tr'));
 
     function aplicarFiltros(){
-      var vModelo = selects[0].value, vTipo = selects[1].value, vObs = selects[2].value;
+      var selModelo = msModelo.getSelected(), selTipo = msTipo.getSelected(), selObs = msObs.getSelected();
       var visiveis = 0;
       linhas.forEach(function(tr){
-        var ok = (!vModelo || tr.getAttribute('data-modelo') === vModelo)
-              && (!vTipo || tr.getAttribute('data-tipo') === vTipo)
-              && (!vObs || tr.getAttribute('data-obs') === vObs);
+        var ok = (selModelo.size === 0 || selModelo.has(tr.getAttribute('data-modelo')))
+              && (selTipo.size === 0 || selTipo.has(tr.getAttribute('data-tipo')))
+              && (selObs.size === 0 || selObs.has(tr.getAttribute('data-obs')));
         tr.classList.toggle('filtro-oculto', !ok);
         if(ok) visiveis++;
       });
-      contagem.textContent = (vModelo || vTipo || vObs) ? ('· ' + visiveis + ' de ' + linhas.length + ' modelos') : '';
+      contagem.textContent = (selModelo.size || selTipo.size || selObs.size) ? ('· ' + visiveis + ' de ' + linhas.length + ' modelos') : '';
     }
-    selects.forEach(function(s){ s.addEventListener('change', aplicarFiltros); });
+    var msModelo = wireMultiSelect('filtroModelo', aplicarFiltros);
+    var msTipo = wireMultiSelect('filtroTipo', aplicarFiltros);
+    var msObs = wireMultiSelect('filtroObs', aplicarFiltros);
     var limparBtn = document.getElementById('filtroLimpar');
     if(limparBtn) limparBtn.addEventListener('click', function(){
-      selects.forEach(function(s){ s.value = ''; });
+      [msModelo, msTipo, msObs].forEach(function(ms){ if(ms) ms.clear(); });
       aplicarFiltros();
     });
   }
@@ -1206,19 +1281,17 @@ JS = """
 
     var sfIdadeFaixas = [[0, 3, '0–2 anos'], [3, 6, '3–5 anos'], [6, 11, '6–10 anos'], [11, 16, '11–15 anos'], [16, 21, '16–20 anos'], [21, Infinity, '+20 anos']];
 
-    var sfTop = {
-      tipo: document.getElementById('sfTopTipo'),
-      modelo: document.getElementById('sfTopModelo'),
-      status: document.getElementById('sfTopStatus')
-    };
+    var sfMsTipo = wireMultiSelect('sfTopTipo', sfRecompute);
+    var sfMsModelo = wireMultiSelect('sfTopModelo', sfRecompute);
+    var sfMsStatus = wireMultiSelect('sfTopStatus', sfRecompute);
     var sfTopPatrimonio = document.getElementById('sfTopPatrimonio');
     var sfTopContagem = document.getElementById('sfTopContagem');
 
     function sfFiltered(){
-      var vTipo = sfTop.tipo.value, vModelo = sfTop.modelo.value, vStatus = sfTop.status.value;
+      var selTipo = sfMsTipo.getSelected(), selModelo = sfMsModelo.getSelected(), selStatus = sfMsStatus.getSelected();
       var vPatrimonio = sfTopPatrimonio.value.trim().toUpperCase();
       return sfRaw.filter(function(e){
-        return (!vTipo || e.tipo === vTipo) && (!vModelo || e.modelo === vModelo) && (!vStatus || e.status === vStatus)
+        return (selTipo.size === 0 || selTipo.has(e.tipo)) && (selModelo.size === 0 || selModelo.has(e.modelo)) && (selStatus.size === 0 || selStatus.has(e.status))
             && (!vPatrimonio || e.patrimonio.toUpperCase().indexOf(vPatrimonio) !== -1);
       });
     }
@@ -1324,12 +1397,12 @@ JS = """
       }).join('') || '<tr><td colspan="7">Nenhum equipamento neste filtro.</td></tr>';
 
       // Tabela "Cadastro Completo": mostra/oculta linhas já renderizadas
-      var vTipo = sfTop.tipo.value, vModelo = sfTop.modelo.value, vStatus = sfTop.status.value;
+      var selTipo2 = sfMsTipo.getSelected(), selModelo2 = sfMsModelo.getSelected(), selStatus2 = sfMsStatus.getSelected();
       var vPatrimonio = sfTopPatrimonio.value.trim().toUpperCase();
       sfRows.forEach(function(tr){
-        var ok = (!vTipo || tr.getAttribute('data-tipo') === vTipo)
-              && (!vModelo || tr.getAttribute('data-modelo') === vModelo)
-              && (!vStatus || tr.getAttribute('data-status') === vStatus)
+        var ok = (selTipo2.size === 0 || selTipo2.has(tr.getAttribute('data-tipo')))
+              && (selModelo2.size === 0 || selModelo2.has(tr.getAttribute('data-modelo')))
+              && (selStatus2.size === 0 || selStatus2.has(tr.getAttribute('data-status')))
               && (!vPatrimonio || tr.getAttribute('data-patrimonio').toUpperCase().indexOf(vPatrimonio) !== -1);
         tr.classList.toggle('filtro-oculto', !ok);
       });
@@ -1337,11 +1410,10 @@ JS = """
       sfTopContagem.textContent = sfFmtInt(n) + ' de ' + sfFmtInt(sfRaw.length) + ' equipamentos selecionados';
     }
 
-    Object.keys(sfTop).forEach(function(k){ sfTop[k].addEventListener('change', sfRecompute); });
     sfTopPatrimonio.addEventListener('input', sfRecompute);
     var sfTopLimpar = document.getElementById('sfTopLimpar');
     if(sfTopLimpar) sfTopLimpar.addEventListener('click', function(){
-      Object.keys(sfTop).forEach(function(k){ sfTop[k].value = ''; });
+      [sfMsTipo, sfMsModelo, sfMsStatus].forEach(function(ms){ ms.clear(); });
       sfTopPatrimonio.value = '';
       sfRecompute();
     });
