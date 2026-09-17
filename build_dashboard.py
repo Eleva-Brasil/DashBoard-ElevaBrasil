@@ -411,17 +411,15 @@ for _, r in saude.sort_values("Lucro Acumulado", ascending=False).iterrows():
     })
 
 if fat_saude_total > 0 and faturamento.get("ytd_liquido"):
-    _diff_pct = abs(fat_saude_total - faturamento["ytd_liquido"]) / faturamento["ytd_liquido"] * 100
-    if _diff_pct > 20:
-        quality_notes.append({
-            "icon": "🟡",
-            "title": "Faturamento por Equipamento não bate com o Faturamento oficial",
-            "detail": f"A soma do Faturamento Acumulado por equipamento na aba Saúde da Frota (R$ {fat_saude_total:,.2f}) "
-                      f"é {_diff_pct:.0f}% diferente do Faturamento líquido oficial (YTD, R$ {faturamento['ytd_liquido']:,.2f}). "
-                      "Combinado com a Eleva: os dois deveriam olhar o mesmo período - a diferença pode indicar um ajuste "
-                      "necessário na query de origem dessa planilha. Tratar os números desta aba como direcionais até "
-                      "essa diferença ser explicada."
-        })
+    quality_notes.append({
+        "icon": "🟡",
+        "title": "Faturamento por Equipamento é acumulado histórico, não YTD",
+        "detail": f"O Faturamento Acumulado por equipamento na aba Saúde da Frota (R$ {fat_saude_total:,.2f}) soma todo o "
+                  "histórico disponível na planilha nota a nota por equipamento (só tipo \"Fatura\", mesma regra do "
+                  f"Faturamento geral), não só o ano corrente - por isso é maior que o Faturamento líquido oficial "
+                  f"(YTD, R$ {faturamento['ytd_liquido']:,.2f}). É esperado: a ideia é medir o retorno de cada "
+                  "equipamento desde que entrou em operação, não só neste ano."
+    })
 
 if saude_frota["qtd_sem_registro_financeiro"] > 0:
     quality_notes.append({
