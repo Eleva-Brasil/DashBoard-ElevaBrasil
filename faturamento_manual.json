@@ -1,10 +1,10 @@
 {
-  "hoje_efetivo": "2026-09-30",
+  "hoje_efetivo": "2026-10-01",
   "quality_notes": [
     {
       "icon": "🟡",
       "title": "\"NF de débito\" excluída do Faturamento",
-      "detail": "497 lançamentos do tipo \"NF de débito\" (total de R$ 4.394.804) foram excluídos de todos os totais de Faturamento (Ano, Mês, Mês Fechado, gráfico) — não entram no cálculo, por decisão de negócio."
+      "detail": "498 lançamentos do tipo \"NF de débito\" (total de R$ 4.398.018) foram excluídos de todos os totais de Faturamento (Ano, Mês, Mês Fechado, gráfico) — não entram no cálculo, por decisão de negócio."
     },
     {
       "icon": "🟡",
@@ -14,12 +14,12 @@
     {
       "icon": "🟡",
       "title": "Documentos sem classificação de \"Tipo\"",
-      "detail": "48 lançamentos de Faturamento (fora o lote de 31/05/2024) não têm o campo \"Tipo\" preenchido (ex.: Fatura, NFse Serviço, NF de débito). Foram mantidos no cálculo de faturamento líquido, mas recomendamos validar com o financeiro se representam estornos/ajustes manuais."
+      "detail": "49 lançamentos de Faturamento (fora o lote de 31/05/2024) não têm o campo \"Tipo\" preenchido (ex.: Fatura, NFse Serviço, NF de débito). Foram mantidos no cálculo de faturamento líquido, mas recomendamos validar com o financeiro se representam estornos/ajustes manuais."
     },
     {
       "icon": "🟡",
       "title": "Diferença entre \"Total Documento - Desconto - IRF\" e \"Total Faturado\"",
-      "detail": "192 registros (3.4% da base de Faturamento) têm essa conta divergente (inclui casos de \"Total Documento\" = 0 com \"Total Faturado\" preenchido). Por decisão de negócio, o painel usa \"Total Documento\" como fonte oficial dos totais de Faturamento (não \"Total Faturado\")."
+      "detail": "194 registros (3.4% da base de Faturamento) têm essa conta divergente (inclui casos de \"Total Documento\" = 0 com \"Total Faturado\" preenchido). Por decisão de negócio, o painel usa \"Total Documento\" como fonte oficial dos totais de Faturamento (não \"Total Faturado\")."
     },
     {
       "icon": "🟡",
@@ -33,25 +33,21 @@
     }
   ],
   "faturamento": {
-    "ytd_liquido": 50305281.45999999,
-    "ytd_liquido_ant": 56987955.23,
-    "ytd_var_pct": -11.72646701049218,
-    "ytd_bruto": 50305281.45999999,
+    "ytd_liquido": 50543258.01,
+    "ytd_liquido_ant": 57068133.45,
+    "ytd_var_pct": -11.433483181496984,
+    "ytd_bruto": 50543258.01,
     "ytd_deducoes": 0.0,
-    "mtd_liquido": 5058957.050000001,
-    "mtd_liquido_ant": 5697370.380000001,
-    "mtd_var_pct": -11.205403325033615,
-    "mes_fechado_label": "ago/26",
-    "mes_fechado_liquido": 5886725.99,
-    "mes_fechado_liquido_ant": 6039533.7700000005,
-    "mes_fechado_var_pct": -2.5301254338379264,
-    "corte_label": "30/09/2026"
+    "mtd_liquido": 215547.0,
+    "mtd_liquido_ant": 80178.22,
+    "mtd_var_pct": 168.83485315588194,
+    "mes_fechado_label": "set/26",
+    "mes_fechado_liquido": 5081386.6,
+    "mes_fechado_liquido_ant": 5697370.380000001,
+    "mes_fechado_var_pct": -10.81172082760049,
+    "corte_label": "01/10/2026"
   },
   "serie_mensal": [
-    {
-      "mes": "2024-10",
-      "valor": 7804828.65
-    },
     {
       "mes": "2024-11",
       "valor": 4992918.22
@@ -142,7 +138,11 @@
     },
     {
       "mes": "2026-09",
-      "valor": 5058957.05
+      "valor": 5081386.6
+    },
+    {
+      "mes": "2026-10",
+      "valor": 215547.0
     }
   ],
   "comparativo_anual": {
@@ -200,13 +200,13 @@
       {
         "mes": 9,
         "mes_label": "set",
-        "atual": 5058957.05,
+        "atual": 5081386.6,
         "anterior": 5697370.38
       },
       {
         "mes": 10,
         "mes_label": "out",
-        "atual": null,
+        "atual": 215547.0,
         "anterior": 6357265.58
       },
       {
@@ -223,15 +223,19 @@
       }
     ],
     "total_ano_anterior_completo": 74264644.22000001,
-    "ytd_atual": 50305281.45999999,
-    "ytd_anterior_mesmo_periodo": 56987955.23,
-    "projecao_fechamento_ano": 67257977.04358974,
-    "projecao_vs_ano_anterior_pct": -9.434727992035985
+    "ytd_atual": 50543258.01,
+    "ytd_anterior_mesmo_periodo": 57068133.45,
+    "projecao_fechamento_ano": 67329522.53156935,
+    "projecao_vs_ano_anterior_pct": -9.33838943318197
   },
   "alertas": [
     {
       "nivel": "warning",
-      "texto": "Faturamento líquido acumulado no ano caiu 11.7% vs. mesmo período de 2025 (R$ 50.305.281 vs R$ 56.987.955)."
+      "texto": "Faturamento líquido acumulado no ano caiu 11.4% vs. mesmo período de 2025 (R$ 50.543.258 vs R$ 57.068.133)."
+    },
+    {
+      "nivel": "warning",
+      "texto": "Faturamento de set/26 fechou 10.8% abaixo do mesmo mês do ano anterior."
     }
   ]
 }
