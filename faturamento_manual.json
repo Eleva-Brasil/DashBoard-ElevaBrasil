@@ -19,7 +19,7 @@
     {
       "icon": "🟡",
       "title": "Diferença entre \"Total Documento - Desconto - IRF\" e \"Total Faturado\"",
-      "detail": "198 registros (3.4% da base de Faturamento) têm essa conta divergente (inclui casos de \"Total Documento\" = 0 com \"Total Faturado\" preenchido). Por decisão de negócio, o painel usa \"Total Documento\" como fonte oficial dos totais de Faturamento (não \"Total Faturado\")."
+      "detail": "199 registros (3.4% da base de Faturamento) têm essa conta divergente (inclui casos de \"Total Documento\" = 0 com \"Total Faturado\" preenchido). Por decisão de negócio, o painel usa \"Total Documento\" como fonte oficial dos totais de Faturamento (não \"Total Faturado\")."
     },
     {
       "icon": "🟡",
@@ -33,14 +33,14 @@
     }
   ],
   "faturamento": {
-    "ytd_liquido": 52242826.870000005,
+    "ytd_liquido": 52433108.620000005,
     "ytd_liquido_ant": 58738001.88,
-    "ytd_var_pct": -11.057875314297295,
-    "ytd_bruto": 52242826.870000005,
+    "ytd_var_pct": -10.733925326368276,
+    "ytd_bruto": 52433108.620000005,
     "ytd_deducoes": 0.0,
-    "mtd_liquido": 1915115.86,
+    "mtd_liquido": 2105397.61,
     "mtd_liquido_ant": 1750046.65,
-    "mtd_var_pct": 9.432274848216204,
+    "mtd_var_pct": 20.305227863497244,
     "mes_fechado_label": "set/26",
     "mes_fechado_liquido": 5081386.6,
     "mes_fechado_liquido_ant": 5697370.380000001,
@@ -142,7 +142,7 @@
     },
     {
       "mes": "2026-10",
-      "valor": 1915115.86
+      "valor": 2105397.61
     }
   ],
   "comparativo_anual": {
@@ -206,7 +206,7 @@
       {
         "mes": 10,
         "mes_label": "out",
-        "atual": 1915115.86,
+        "atual": 2105397.61,
         "anterior": 6357265.58
       },
       {
@@ -223,15 +223,15 @@
       }
     ],
     "total_ano_anterior_completo": 74264644.22000001,
-    "ytd_atual": 52242826.870000005,
+    "ytd_atual": 52433108.620000005,
     "ytd_anterior_mesmo_periodo": 58738001.88,
-    "projecao_fechamento_ano": 67619261.72890072,
-    "projecao_vs_ano_anterior_pct": -8.948245239569397
+    "projecao_fechamento_ano": 67865548.39113475,
+    "projecao_vs_ano_anterior_pct": -8.616611438827759
   },
   "alertas": [
     {
       "nivel": "warning",
-      "texto": "Faturamento líquido acumulado no ano caiu 11.1% vs. mesmo período de 2025 (R$ 52.242.827 vs R$ 58.738.002)."
+      "texto": "Faturamento líquido acumulado no ano caiu 10.7% vs. mesmo período de 2025 (R$ 52.433.109 vs R$ 58.738.002)."
     },
     {
       "nivel": "warning",
