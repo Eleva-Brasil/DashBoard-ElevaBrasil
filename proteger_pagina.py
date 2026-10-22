@@ -149,11 +149,24 @@ button:disabled{ opacity:.6; cursor:default; }
     return new TextDecoder().decode(claro);
   }
 
-  function mostrar(html){ document.open(); document.write(html); document.close(); }
+  // Só troca o documento depois que a tela de login terminou de carregar:
+  // um document.open() durante o carregamento não limpa a página e o
+  // formulário fica por cima do dashboard.
+  function mostrar(html){
+    function trocar(){ document.open(); document.write(html); document.close(); }
+    if (document.readyState === "complete") trocar();
+    else window.addEventListener("load", trocar, { once: true });
+  }
 
-  // Já conectado (nesta aba ou "manter conectado")? Tenta abrir direto.
+  // Já conectado (nesta aba ou "manter conectado")? Abre direto, sem mostrar o formulário.
   var salva = ler("sessionStorage") || ler("localStorage");
-  if (salva) { descriptografar(b64(salva)).then(mostrar, apagar); }
+  if (salva) {
+    document.getElementById("form").style.visibility = "hidden";
+    descriptografar(b64(salva)).then(mostrar, function(){
+      apagar();
+      document.getElementById("form").style.visibility = "";
+    });
+  }
 
   var form = document.getElementById("form"), btn = document.getElementById("entrar"), erro = document.getElementById("erro");
   form.addEventListener("submit", async function(ev){
