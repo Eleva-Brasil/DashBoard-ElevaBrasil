@@ -47,10 +47,10 @@ jobs:
       - name: Gerar HTML final
         run: python3 generate_html.py
 
-      - name: Preparar pasta de publicação
-        run: |
-          mkdir -p _site
-          cp dashboard_eleva.html _site/index.html
+      - name: Proteger com senha e preparar pasta de publicação
+        env:
+          DASHBOARD_SENHA: ${{ secrets.DASHBOARD_SENHA }}
+        run: python3 proteger_pagina.py dashboard_eleva.html _site/index.html
 
       - uses: actions/upload-pages-artifact@v3
         with:
