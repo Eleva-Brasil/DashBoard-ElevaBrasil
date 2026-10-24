@@ -3,15 +3,15 @@
 """
 Roda LOCALMENTE com a planilha "Faturamento e Despesa por Equipamento"
 (traz só código de equipamento + valores agregados - sem nome de cliente ou
-CNPJ, então é seguro publicar). Atualiza faturamento_despesa_equipamento.csv,
-usado na aba Saúde da Frota para calcular lucro e ROI por equipamento.
+CNPJ, então é seguro publicar). Gera faturamento_despesa_equipamento.csv,
+usado SÓ na aba Saúde da Frota (faturamento, despesa, lucro e ROI por
+equipamento) - não mexe no Faturamento geral (faturamento_manual.json).
 
-Hoje esta planilha só vale para DESPESAS: a coluna Valor_Faturamento dela
-soma todos os tipos de nota (Fatura, NFse Serviço, ...), mas o Faturamento
-por equipamento conta só "Fatura" e vem de update_faturamento_por_equipamento.py.
-Por isso o Faturamento Acumulado já gravado no CSV é mantido; daqui só entra
-Despesas Acumuladas. Equipamento novo (ainda sem faturamento "Fatura") entra
-com Faturamento Acumulado = 0.
+Desde 23/10/2026 esta planilha é a fonte oficial dos dois valores, por
+decisão do usuário: Valor_Faturamento soma todos os tipos de nota do
+equipamento (Fatura + NFse Serviço etc.), que é o faturamento real dele -
+a regra antiga "só Fatura" subestimava equipamentos faturados por NFse.
+Equipamento que sumir da planilha nova mantém os valores que já tinha.
 
 Aceita .xlsx ou texto separado por TAB (colado do Excel, números no
 formato brasileiro "1.234,56").
@@ -32,9 +32,8 @@ def ler_planilha(path: Path) -> pd.DataFrame:
     if path.suffix.lower() in (".xlsx", ".xls"):
         return pd.read_excel(path)
     df = pd.read_csv(path, sep="\t", dtype=str)
-    df["Valor_Despesas"] = (
-        df["Valor_Despesas"].str.strip().str.replace(".", "", regex=False).str.replace(",", ".", regex=False).astype(float)
-    )
+    for col in ("Valor_Faturamento", "Valor_Despesas"):
+        df[col] = df[col].str.strip().str.replace(".", "", regex=False).str.replace(",", ".", regex=False).astype(float)
     return df
 
 
@@ -42,29 +41,31 @@ def main():
     path = Path(sys.argv[1]) if len(sys.argv) > 1 else BASE / "Faturamento e Despesa por Equipamento.xlsx"
     df = ler_planilha(path)
 
-    despesas = (
-        df.rename(columns={"Série_Equipamento": "Nº de série", "Valor_Despesas": "Despesas Acumuladas"})
+    novo = (
+        df.rename(columns={
+            "Série_Equipamento": "Nº de série",
+            "Valor_Faturamento": "Faturamento Acumulado",
+            "Valor_Despesas": "Despesas Acumuladas",
+        })
         .drop_duplicates(subset=["Nº de série"])
-        .set_index("Nº de série")["Despesas Acumuladas"]
+        .set_index("Nº de série")[["Faturamento Acumulado", "Despesas Acumuladas"]]
         .astype(float)
     )
 
     atual = pd.read_csv(OUT_FILE, dtype={"Nº de série": str}).set_index("Nº de série")
-    antes = atual["Despesas Acumuladas"].sum()
+    antes = atual.sum()
 
-    out = atual[["Faturamento Acumulado"]].join(despesas, how="outer")
-    out["Faturamento Acumulado"] = out["Faturamento Acumulado"].fillna(0.0)
-    # Equipamento que sumiu da planilha nova mantém a despesa que já tinha.
-    out["Despesas Acumuladas"] = out["Despesas Acumuladas"].fillna(atual["Despesas Acumuladas"]).fillna(0.0)
+    # Equipamento que sumiu da planilha nova mantém os valores que já tinha.
+    out = novo.combine_first(atual).fillna(0.0)
     out.index.name = "Nº de série"
     out = out.reset_index()[["Nº de série", "Faturamento Acumulado", "Despesas Acumuladas"]]
 
     out.to_csv(OUT_FILE, index=False)
 
-    novos = sorted(set(despesas.index) - set(atual.index))
+    novos = sorted(set(novo.index) - set(atual.index))
     print(f"{OUT_FILE} atualizado. {len(out)} equipamentos ({len(novos)} novos: {', '.join(novos) or '-'}).")
-    print(f"Despesas acumuladas total: R$ {antes:,.2f} -> R$ {out['Despesas Acumuladas'].sum():,.2f}")
-    print(f"Faturamento acumulado (só Fatura, mantido): R$ {out['Faturamento Acumulado'].sum():,.2f}")
+    print(f"Faturamento acumulado total: R$ {antes['Faturamento Acumulado']:,.2f} -> R$ {out['Faturamento Acumulado'].sum():,.2f}")
+    print(f"Despesas acumuladas total: R$ {antes['Despesas Acumuladas']:,.2f} -> R$ {out['Despesas Acumuladas'].sum():,.2f}")
 
 
 if __name__ == "__main__":

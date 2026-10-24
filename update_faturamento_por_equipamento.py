@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+DESATIVADO desde 23/10/2026: o Faturamento por equipamento da Saúde da Frota
+passou a vir da planilha agregada "Faturamento e Despesa por Equipamento"
+(todos os tipos de nota, ver update_faturamento_despesa_equipamento.py), por
+decisão do usuário. Rodar este script sobrescreveria esse valor com "só Fatura".
+Só funciona com FORCAR_SO_FATURA=1.
+
 Roda LOCALMENTE (nunca no GitHub Actions) com a planilha nota-a-nota de
 Faturamento por Equipamento (tem nome/código de cliente - por isso NUNCA é
 commitada nem processada em CI, igual à planilha de Faturamento geral).
@@ -24,6 +30,7 @@ planilha antiga - esta planilha nova só traz receita, não despesa).
 Uso:
     python3 update_faturamento_por_equipamento.py "Faturamento por Equipamento - Setembro.xlsx"
 """
+import os
 import sys
 from pathlib import Path
 
@@ -43,6 +50,8 @@ def load_master() -> pd.DataFrame:
 
 
 def main():
+    if os.environ.get("FORCAR_SO_FATURA") != "1":
+        sys.exit("Script desativado (ver docstring): use update_faturamento_despesa_equipamento.py.")
     path = sys.argv[1] if len(sys.argv) > 1 else BASE / "Faturamento por Equipamento.xlsx"
     novo = pd.read_excel(path)
     novo["DATA"] = pd.to_datetime(novo["DATA"])
