@@ -58,6 +58,7 @@ def fmt_int(v):
 
 
 ROTULO_OPCAO = {"Disponivel": "Disponível"}  # valor interno (LOC1) -> texto exibido
+STATUS_ROTULO = {"Disponivel": ("Disponível", "st-disp"), "Em Contrato": ("Em Contrato", "st-contr"), "Em Manutenção": ("Em Manutenção", "st-manut")}
 
 
 def ordem_alfabetica(valores):
@@ -323,6 +324,15 @@ table.tbl-texto3 th:nth-child(-n+3), table.tbl-texto3 td:nth-child(-n+3){ text-a
 .table-narrow table.tbl-texto3 thead th, .table-narrow table.tbl-texto3 tbody td{ padding:6px 7px; }
 .ms-option.ms-off{ display:none !important; }
 .lbl-short{ display:none; }
+table.tbl-og{ min-width:0; font-variant-numeric:tabular-nums; }
+table.tbl-og thead th{ white-space:normal; vertical-align:bottom; line-height:1.25; }
+.occ-row.occ-row-fab{ grid-template-columns:100px 78px 1fr 56px; }
+table.tbl-og th:first-child, table.tbl-og td:first-child{ text-align:left; }
+table.tbl-og-par th:nth-child(-n+5), table.tbl-og-par td:nth-child(-n+5){ text-align:left; }
+table.tbl-og-par td:first-child{ color:var(--ink-muted); width:20px; }
+.grid-2-iguais{ grid-template-columns:1fr 1fr; }
+@media (max-width:1200px){ .grid-2-iguais{ grid-template-columns:1fr; } }
+.vazio{ padding:26px 10px; text-align:center; color:var(--ink-muted); font-size:13px; }
 .v-short{ display:none; }
 .yoy-mob{ display:none; }
 
@@ -394,6 +404,17 @@ table.tbl-texto3 th:nth-child(-n+3), table.tbl-texto3 td:nth-child(-n+3){ text-a
   table.tbl-tipo-saude th:nth-child(3), table.tbl-tipo-saude td:nth-child(3),
   table.tbl-tipo-saude th:nth-child(4), table.tbl-tipo-saude td:nth-child(4),
   table.tbl-tipo-saude th:nth-child(5), table.tbl-tipo-saude td:nth-child(5),
+  table.tbl-og{ font-size:11.5px; }
+  .occ-row.occ-row-fab{ grid-template-columns:1fr 50px; }
+  table.tbl-og thead th, table.tbl-og tbody td{ padding:6px 4px; white-space:normal; }
+  table.tbl-og-fab th:nth-child(2), table.tbl-og-fab td:nth-child(2),
+  table.tbl-og-ret th:nth-child(5), table.tbl-og-ret td:nth-child(5),
+  table.tbl-og-par th:nth-child(1), table.tbl-og-par td:nth-child(1),
+  table.tbl-og-par th:nth-child(4), table.tbl-og-par td:nth-child(4),
+  table.tbl-og-par th:nth-child(6), table.tbl-og-par td:nth-child(6),
+  table.tbl-og-idade th:nth-child(4), table.tbl-og-idade td:nth-child(4),
+  table.tbl-tipo-af th:nth-child(4), table.tbl-tipo-af td:nth-child(4),
+  table.tbl-tipo-af th:nth-child(6), table.tbl-tipo-af td:nth-child(6),
   table.tbl-tipo-af th:nth-child(3), table.tbl-tipo-af td:nth-child(3),
   table.tbl-tipo-af th:nth-child(5), table.tbl-tipo-af td:nth-child(5){ display:none; }
   table.tbl-equip td.col-patr::after{ content:attr(data-sub); display:block; margin-top:1px; font-size:11px; font-weight:400; color:var(--ink-muted); }
@@ -801,8 +822,229 @@ if af["sem_registro_qtd"] > 0:
 </div>
 """
 
+og = D["ocupacao_gerencial"]
+og_meta = og.get("meta_ocup_financeira_pct")
+og_tipo_map = {t["nome"]: t for t in og["por_tipo"]}
+
+
+def pct_ou_traco(v):
+    return pct(v) if v is not None else "—"
+
+
+# --- 1) Cartões de capital -------------------------------------------------
+cap_total = af["total_valor"] or 1
+seg = lambda v: v / cap_total * 100
+gap = af["ocupacao_financeira_pct"] - af["ocupacao_fisica_pct"]
+if gap >= 0:
+    gap_txt = "As máquinas de maior valor estão mais alugadas que as de menor valor"
+    gap_tag = '<span class="tag good">sinal positivo</span>'
+else:
+    gap_txt = "As máquinas de maior valor estão MENOS alugadas que as de menor valor"
+    gap_tag = '<span class="tag critical">atenção</span>'
+meta_html = ""
+if og_meta:
+    falta = max(og_meta / 100 * af["total_valor"] - af["contrato_v"], 0)
+    meta_html = (f'<div class="kpi-sub" style="margin-top:6px;">Meta {pct(og_meta)} &middot; '
+                 + (f'faltam <b>{brl_m(falta)}</b> em contrato' if falta > 0 else '<b>meta atingida</b>') + '</div>')
+
+og_kpis = f"""
+<div class="grid grid-5">
+  <div class="card">
+    <h3>Capital Investido</h3>
+    <div class="kpi-value">{brl_m(af['total_valor'])}</div>
+    <div class="mix-bar">
+      <div class="mix-seg-contr" style="width:{seg(af['contrato_v']):.2f}%"></div>
+      <div class="mix-seg-disp" style="width:{seg(af['disponivel_v']):.2f}%"></div>
+      <div class="mix-seg-manut" style="width:{seg(af['manutencao_v']):.2f}%"></div>
+    </div>
+    <div class="kpi-sub">{fmt_int(af['total_maquinas'])} máquinas &middot; valor de compra</div>
+  </div>
+  <div class="card">
+    <h3>Capital Produtivo (Em Contrato)</h3>
+    <div class="kpi-row"><span class="kpi-value" style="color:var(--status-contr-text)">{brl_m(af['contrato_v'])}</span></div>
+    <div class="kpi-sub">{pct(af['ocupacao_financeira_pct'])} do capital &middot; {fmt_int(af['contrato_n'])} máq.</div>
+    {meta_html}
+  </div>
+  <div class="card">
+    <h3>Capital Parado (Disponível)</h3>
+    <div class="kpi-row"><span class="kpi-value" style="color:var(--status-disp)">{brl_m(af['disponivel_v'])}</span></div>
+    <div class="kpi-sub">{pct(seg(af['disponivel_v']))} do capital &middot; {fmt_int(af['disponivel_n'])} máq.</div>
+  </div>
+  <div class="card">
+    <h3>Capital em Manutenção</h3>
+    <div class="kpi-row"><span class="kpi-value" style="color:var(--status-manut)">{brl_m(af['manutencao_v'])}</span></div>
+    <div class="kpi-sub">{pct(seg(af['manutencao_v']))} do capital &middot; {fmt_int(af['manutencao_n'])} máq.</div>
+  </div>
+  <div class="card">
+    <h3>Ocupação Física x Financeira</h3>
+    <div class="kpi-row"><span class="kpi-value">{pct(af['ocupacao_fisica_pct'])}</span><span class="kpi-unit">x</span><span class="kpi-value">{pct(af['ocupacao_financeira_pct'])}</span></div>
+    <div class="kpi-sub">{gap_txt} {gap_tag}</div>
+  </div>
+</div>
+"""
+
+# --- 6) Evolução da ocupação (histórico diário) ---------------------------
+hist = og["historico"]
+if len(hist) >= 2:
+    hw, hh, hpl, hpr, hpt, hpb = 980, 220, 40, 14, 12, 26
+    vals = [v for h in hist for v in (h["ocup_fisica_pct"], h["ocup_financeira_pct"]) if v is not None]
+    if og_meta:
+        vals.append(og_meta)
+    vmin, vmax = max(min(vals) - 5, 0), min(max(vals) + 5, 100)
+    vmax = vmax if vmax > vmin else vmin + 1
+    X = lambda i: hpl + (hw - hpl - hpr) * (i / (len(hist) - 1))
+    Y = lambda v: hpt + (hh - hpt - hpb) * (1 - (v - vmin) / (vmax - vmin))
+    def linha(chave, cor):
+        pts = " ".join(f"{X(i):.1f},{Y(h[chave]):.1f}" for i, h in enumerate(hist) if h[chave] is not None)
+        return f'<polyline points="{pts}" fill="none" stroke="{cor}" stroke-width="2.5" stroke-linejoin="round"/>'
+    grade = "".join(
+        f'<line x1="{hpl}" x2="{hw - hpr}" y1="{Y(v):.1f}" y2="{Y(v):.1f}" stroke="var(--hairline)"/>'
+        f'<text class="axis-label" x="{hpl - 6}" y="{Y(v) + 4:.1f}" text-anchor="end">{v:.0f}%</text>'
+        for v in [vmin + (vmax - vmin) * k / 4 for k in range(5)])
+    passo = max(1, len(hist) // 8)
+    rotulos = "".join(
+        f'<text class="axis-label" x="{X(i):.1f}" y="{hh - 6}" text-anchor="middle">{h["data"][8:10]}/{h["data"][5:7]}</text>'
+        for i, h in enumerate(hist) if i % passo == 0 or i == len(hist) - 1)
+    meta_linha = (f'<line x1="{hpl}" x2="{hw - hpr}" y1="{Y(og_meta):.1f}" y2="{Y(og_meta):.1f}" stroke="var(--warning)" stroke-dasharray="6 4"/>'
+                  if og_meta else "")
+    hist_corpo = f"""<svg viewBox="0 0 {hw} {hh}" width="100%">{grade}{meta_linha}{linha('ocup_fisica_pct', 'var(--ink-muted)')}{linha('ocup_financeira_pct', 'var(--neutral)')}{rotulos}</svg>"""
+    hist_hint = (f'Uma medição por dia desde {hist[0]["data"][8:10]}/{hist[0]["data"][5:7]}/{hist[0]["data"][:4]} &middot; '
+                 '<i class="dot" style="background:var(--neutral)"></i>Financeira <i class="dot" style="background:var(--ink-muted)"></i>Física'
+                 + (' &middot; <span style="color:var(--warning)">- - meta</span>' if og_meta else ''))
+else:
+    hist_corpo = '<div class="vazio">A coleta diária começa com a publicação desta versão. O gráfico aparece a partir do 2º dia e fica mais útil com algumas semanas de dados.</div>'
+    hist_hint = "Ocupação física e financeira, uma medição por dia"
+og_hist_card = f"""
+<div class="table-card">
+  <h3>Evolução da Ocupação</h3>
+  <span class="hint">{hist_hint}</span>
+  {hist_corpo}
+</div>
+"""
+
+# Seção de evolução fica desligada até a coleta diária ser aprovada
+# (gravação depende do workflow - GRAVAR_HISTORICO=1).
+MOSTRAR_EVOLUCAO = False
+og_hist_secao = (f"""<div class="section-title"><h2>Evolução</h2><span class="hint">Ocupação dia a dia</span></div>
+  {og_hist_card}
+""" if MOSTRAR_EVOLUCAO else "")
+
+# --- 2) Ocupação financeira por Fabricante --------------------------------
+fab_rows, fab_tab = [], []
+for f in og["por_fabricante"]:
+    c = f["capital"] or 1
+    fab_rows.append(f"""
+    <div class="occ-row occ-row-fab">
+      <div class="occ-name">{f['nome']}</div>
+      <div class="occ-total">{brl_m(f['capital'])}</div>
+      <div class="occ-stack" title="Em Contrato {f['capital_contrato']/c*100:.1f}% · Disponível {f['capital_disponivel']/c*100:.1f}% · Manutenção {f['capital_manutencao']/c*100:.1f}% do capital">
+        <div style="width:{f['capital_contrato']/c*100:.2f}%; background:var(--status-contr)"></div>
+        <div style="width:{f['capital_disponivel']/c*100:.2f}%; background:var(--status-disp)"></div>
+        <div style="width:{f['capital_manutencao']/c*100:.2f}%; background:var(--status-manut)"></div>
+      </div>
+      <div class="occ-pct">{pct_ou_traco(f['ocup_financeira_pct'])}</div>
+    </div>""")
+    manut_cls = ' class="num-crit"' if (f["manut_capital_pct"] or 0) >= 40 else ""
+    fab_tab.append(f"""<tr>
+      <td>{f['nome']}</td><td>{fmt_int(f['qtd'])}</td><td>{brl_m(f['capital'])}</td>
+      <td>{pct_ou_traco(f['ocup_fisica_pct'])}</td><td><b>{pct_ou_traco(f['ocup_financeira_pct'])}</b></td>
+      <td{manut_cls}>{pct_ou_traco(f['manut_capital_pct'])}</td>
+    </tr>""")
+og_fab_card = f"""
+<div class="grid grid-2 grid-2-iguais" style="align-items:stretch;">
+  <div class="table-card">
+    <h3>Capital por Fabricante e Status</h3>
+    <span class="hint">barra = capital investido: <i class="dot contr"></i>Em Contrato <i class="dot disp"></i>Disponível <i class="dot manut"></i>Manutenção &middot; % à direita = ocupação financeira</span>
+    {''.join(fab_rows)}
+  </div>
+  <div class="table-card">
+    <h3>Ocupação por Fabricante</h3>
+    <span class="hint">Ordenado por capital investido</span>
+    <div class="tbl-scroll">
+      <table class="tbl-og tbl-og-fab">
+        <thead><tr><th>Fabricante</th><th>Máq.</th><th>Capital</th><th>Ocup. Física</th><th>Ocup. Financeira</th><th>Capital em Manut.</th></tr></thead>
+        <tbody>{''.join(fab_tab)}</tbody>
+      </table>
+    </div>
+  </div>
+</div>
+"""
+
+# --- 3) Retorno sobre o capital ------------------------------------------
+def retorno_tabela(itens, rotulo, titulo_fn=lambda n: n):
+    linhas = []
+    for r in itens:
+        ret = r["retorno_pct"]
+        ret_cls = "num-good" if (ret or 0) >= 100 else ""
+        linhas.append(f"""<tr>
+          <td>{titulo_fn(r['nome'])}</td><td>{brl_m(r['capital'])}</td><td>{brl_m(r['faturamento'])}</td>
+          <td class="{ret_cls}">{pct_ou_traco(ret)}</td><td>{pct_ou_traco(r['despesa_capital_pct'])}</td>
+        </tr>""")
+    return f"""
+  <div class="table-card">
+    <h3>Retorno por {rotulo}</h3>
+    <span class="hint">Faturamento e despesas acumulados desde o início dos registros &divide; capital investido</span>
+    <div class="tbl-scroll">
+      <table class="tbl-og tbl-og-ret">
+        <thead><tr><th>{rotulo}</th><th>Capital</th><th>Faturamento Acum.</th><th>Fat. &divide; Capital</th><th>Despesas &divide; Capital</th></tr></thead>
+        <tbody>{''.join(linhas)}</tbody>
+      </table>
+    </div>
+  </div>"""
+og_ret_card = f"""
+<div class="grid grid-2 grid-2-iguais" style="align-items:stretch;">
+  {retorno_tabela(og['por_fabricante'], 'Fabricante')}
+  {retorno_tabela(og['por_tipo'], 'Tipo', lambda n: n.title())}
+</div>
+"""
+
+# --- 4) Top 10 máquinas caras paradas -------------------------------------
+par_rows = []
+for i, e in enumerate(og["parados_top10"], 1):
+    idade_txt = f"{e['idade_anos']:.1f} anos".replace(".", ",") if e["idade_anos"] is not None else "—"
+    st_cls = "num-crit" if e["status"] == "Em Manutenção" else "num-good"
+    par_rows.append(f"""<tr>
+      <td>{i}</td><td class="col-patr">{e['patrimonio']}</td><td>{e['modelo']}</td><td>{e['fabricante']}</td>
+      <td class="{st_cls}">{STATUS_ROTULO.get(e['status'], (e['status'],))[0]}</td><td>{idade_txt}</td><td><b>{brl(e['valor_compra'], 0)}</b></td>
+    </tr>""")
+par_total = sum(e["valor_compra"] for e in og["parados_top10"])
+og_parados_card = f"""
+<div class="table-card">
+  <h3>As 10 Máquinas de Maior Valor Fora de Contrato</h3>
+  <span class="hint">Disponíveis ou em manutenção agora &middot; somam {brl_m(par_total)} em capital parado</span>
+  <div class="tbl-scroll">
+    <table class="tbl-og tbl-og-par">
+      <thead><tr><th>#</th><th>Patrimônio</th><th>Modelo</th><th>Fabricante</th><th>Status</th><th>Idade</th><th>Valor de Compra</th></tr></thead>
+      <tbody>{''.join(par_rows)}</tbody>
+    </table>
+  </div>
+</div>
+"""
+
+# --- 5) Capital por idade -------------------------------------------------
+id_rows = []
+for r in og["por_idade"]:
+    id_rows.append(f"""<tr>
+      <td>{r['nome']}</td><td>{fmt_int(r['qtd'])}</td><td>{brl_m(r['capital'])}</td><td>{pct(r['capital'] / cap_total * 100)}</td>
+      <td>{pct_ou_traco(r['ocup_fisica_pct'])}</td><td><b>{pct_ou_traco(r['ocup_financeira_pct'])}</b></td>
+    </tr>""")
+og_idade_card = f"""
+<div class="table-card">
+  <h3>Capital por Idade da Frota</h3>
+  <span class="hint">Idade desde a data de compra &middot; ajuda a decidir renovação e venda</span>
+  <div class="tbl-scroll">
+    <table class="tbl-og tbl-og-idade">
+      <thead><tr><th>Idade</th><th>Máq.</th><th>Capital</th><th>% do Capital</th><th>Ocup. Física</th><th>Ocup. Financeira</th></tr></thead>
+      <tbody>{''.join(id_rows)}</tbody>
+    </table>
+  </div>
+</div>
+"""
+
+# --- Por Tipo (tabela existente + ocupação física/financeira) -------------
 af_rows = []
 for t in sorted(af_tipos, key=lambda x: x["total"], reverse=True):
+    g = og_tipo_map.get(t["tipo"], {})
     af_rows.append(f"""<tr>
       <td>{t['tipo']}</td>
       <td>{fmt_int(t['total'])}</td>
@@ -810,6 +1052,8 @@ for t in sorted(af_tipos, key=lambda x: x["total"], reverse=True):
       <td>{fmt_int(t['contrato'])}</td>
       <td>{fmt_int(t['manutencao'])}</td>
       <td>{brl(t['valor'], 2)}</td>
+      <td>{pct_ou_traco(g.get('ocup_fisica_pct'))}</td>
+      <td><b>{pct_ou_traco(g.get('ocup_financeira_pct'))}</b></td>
     </tr>""")
 
 af_page = f"""
@@ -830,49 +1074,28 @@ af_page = f"""
 
   {af_alerta}
 
-  <div class="section-title"><h2>Frota por Status</h2><span class="hint">Contagem ao vivo (API) &middot; valor de aquisição por status</span></div>
-  <div class="grid grid-3">
-    <div class="card">
-      <h3>Disponível</h3>
-      <div class="kpi-row"><span class="kpi-value" style="color:var(--status-disp)">{fmt_int(af['disponivel_n'])}</span></div>
-      <div class="kpi-sub">{pct(af['disponivel_pct'])} da frota &middot; {brl(af['disponivel_v'], 2)}</div>
-    </div>
-    <div class="card">
-      <h3>Em Contrato</h3>
-      <div class="kpi-row"><span class="kpi-value" style="color:var(--status-contr-text)">{fmt_int(af['contrato_n'])}</span></div>
-      <div class="kpi-sub">{pct(af['contrato_pct'])} da frota &middot; {brl(af['contrato_v'], 2)}</div>
-    </div>
-    <div class="card">
-      <h3>Em Manutenção</h3>
-      <div class="kpi-row"><span class="kpi-value" style="color:var(--status-manut)">{fmt_int(af['manutencao_n'])}</span></div>
-      <div class="kpi-sub">{pct(af['manutencao_pct'])} da frota &middot; {brl(af['manutencao_v'], 2)}</div>
-    </div>
-  </div>
+  <div class="section-title"><h2>Capital da Frota</h2><span class="hint">Quanto do capital investido está trabalhando agora</span></div>
+  {og_kpis}
 
-  <div class="grid grid-3" style="margin-top:14px;">
-    <div class="card">
-      <h3>Ocupação Física</h3>
-      <div class="kpi-row"><span class="kpi-value">{pct(af['ocupacao_fisica_pct'])}</span></div>
-      <div class="kpi-sub">Qtd. em contrato &divide; Total de máquinas</div>
-    </div>
-    <div class="card">
-      <h3>Ocupação Financeira</h3>
-      <div class="kpi-row"><span class="kpi-value">{pct(af['ocupacao_financeira_pct'])}</span></div>
-      <div class="kpi-sub">Valor em contrato &divide; Valor total da frota</div>
-    </div>
-    <div class="card">
-      <h3>Frota Total</h3>
-      <div class="kpi-row"><span class="kpi-value">{fmt_int(af['total_maquinas'])}</span></div>
-      <div class="kpi-sub">{brl(af['total_valor'], 2)}</div>
-    </div>
-  </div>
+  {og_hist_secao}
+  <div class="section-title"><h2>Por Fabricante</h2><span class="hint">Onde o capital de cada marca está</span></div>
+  {og_fab_card}
+
+  <div class="section-title"><h2>Retorno sobre o Capital</h2><span class="hint">Quanto cada real investido já devolveu</span></div>
+  {og_ret_card}
+
+  <div class="section-title"><h2>Onde Está o Dinheiro Parado</h2><span class="hint">Prioridade para locação ou manutenção</span></div>
+  {og_parados_card}
+
+  <div class="section-title"><h2>Idade da Frota</h2><span class="hint">Capital e ocupação por faixa de idade</span></div>
+  {og_idade_card}
 
   <div class="section-title"><h2>Por Tipo de Equipamento</h2><span class="hint">Ordenado por total de equipamentos</span></div>
   <div class="table-card">
     <div class="tbl-scroll">
       <table class="tbl-tipo-af">
         <thead><tr>
-          <th>Tipo</th><th>Total</th><th>Disponível</th><th>Em Contrato</th><th>Em Manutenção</th><th>Valor Aquisição</th>
+          <th>Tipo</th><th>Total</th><th>Disponível</th><th>Em Contrato</th><th>Em Manutenção</th><th>Valor Aquisição</th><th>Ocup. Física</th><th>Ocup. Financeira</th>
         </tr></thead>
         <tbody>{''.join(af_rows)}</tbody>
       </table>
@@ -933,7 +1156,6 @@ sf_idade_card = f"""
 </div>
 """
 
-STATUS_ROTULO = {"Disponivel": ("Disponível", "st-disp"), "Em Contrato": ("Em Contrato", "st-contr"), "Em Manutenção": ("Em Manutenção", "st-manut")}
 
 
 def status_html(status):

@@ -426,6 +426,102 @@ for _, r in saude.sort_values("Lucro Acumulado", ascending=False).iterrows():
         "tem_registro_financeiro": bool(r["tem_registro_financeiro"]),
     })
 
+# ---------------------------------------------------------------------------
+# 3e) OCUPAÇÃO FINANCEIRA - VISÃO GERENCIAL (aba "Ocupação Financeira da Frota")
+#    Tudo a partir de `saude` (status ao vivo + Valor de Compra + Data de
+#    Compra + Faturamento/Despesa acumulados por equipamento).
+# ---------------------------------------------------------------------------
+og = saude.copy()
+og["Fabricante"] = og["Modelo"].map(fabricante)
+
+
+def _ocup_grupo(g):
+    total_n, total_v = len(g), float(g["Valor de Compra"].sum())
+    contr = g[g["Status"] == "Em Contrato"]
+    disp_v = float(g.loc[g["Status"] == "Disponivel", "Valor de Compra"].sum())
+    manut_v = float(g.loc[g["Status"] == "Em Manutenção", "Valor de Compra"].sum())
+    contr_v = float(contr["Valor de Compra"].sum())
+    fat, desp = float(g["Faturamento Acumulado"].sum()), float(g["Despesas Acumuladas"].sum())
+    return {
+        "qtd": total_n, "capital": total_v,
+        "capital_contrato": contr_v, "capital_disponivel": disp_v, "capital_manutencao": manut_v,
+        "ocup_fisica_pct": len(contr) / total_n * 100 if total_n else None,
+        "ocup_financeira_pct": contr_v / total_v * 100 if total_v else None,
+        "manut_capital_pct": manut_v / total_v * 100 if total_v else None,
+        "faturamento": fat, "despesas": desp,
+        "retorno_pct": fat / total_v * 100 if total_v else None,
+        "despesa_capital_pct": desp / total_v * 100 if total_v else None,
+    }
+
+
+og_por_fabricante = sorted(
+    [{"nome": k, **_ocup_grupo(g)} for k, g in og.groupby("Fabricante")],
+    key=lambda r: r["capital"], reverse=True)
+og_por_tipo = sorted(
+    [{"nome": k, **_ocup_grupo(g)} for k, g in og.groupby("Tipo do Modelo")],
+    key=lambda r: r["capital"], reverse=True)
+
+# Máquinas de maior valor fora de contrato (Disponível ou Em Manutenção)
+og_parados = []
+for _, r in og[og["Status"] != "Em Contrato"].sort_values("Valor de Compra", ascending=False).head(10).iterrows():
+    og_parados.append({
+        "patrimonio": r["Nº de série"], "modelo": r["Modelo"], "fabricante": r["Fabricante"],
+        "tipo": r["Tipo do Modelo"], "status": r["Status"], "valor_compra": float(r["Valor de Compra"]),
+        "idade_anos": round(r["Idade (anos)"], 1) if pd.notna(r["Idade (anos)"]) else None,
+    })
+
+# Capital por faixa de idade (mesmas faixas do histograma da Saúde da Frota)
+og_idade = []
+for lo, hi, label in _faixas_idade + [(None, None, "Sem data")]:
+    g = og[og["Idade (anos)"].isna()] if lo is None else og[(og["Idade (anos)"] >= lo) & (og["Idade (anos)"] < hi)]
+    if len(g):
+        og_idade.append({"nome": label, **_ocup_grupo(g)})
+
+# Meta de ocupação financeira (opcional): metas.json -> {"ocupacao_financeira_pct": 60}
+META_OCUP_FIN = None
+_metas_path = BASE / "metas.json"
+if _metas_path.exists():
+    META_OCUP_FIN = json.loads(_metas_path.read_text(encoding="utf-8")).get("ocupacao_financeira_pct")
+if os.environ.get("META_OCUPACAO_FINANCEIRA"):  # só para prévia local
+    META_OCUP_FIN = float(os.environ["META_OCUPACAO_FINANCEIRA"])
+
+# Histórico diário (1 linha por dia, só agregados). Gravado apenas no robô
+# (GRAVAR_HISTORICO=1, dados ao vivo da API) - execução local não mexe nele.
+HIST_FILE = BASE / "historico_ocupacao.csv"
+hoje_txt = AGORA_BR.strftime("%Y-%m-%d")
+linha_hoje = {
+    "data": hoje_txt, "maquinas": af_total_n,
+    "em_contrato": af_contr_n, "disponivel": af_disp_n, "manutencao": af_manut_n,
+    "capital_total": round(af_total_v, 2), "capital_contrato": round(af_contr_v, 2),
+    "capital_disponivel": round(af_disp_v, 2), "capital_manutencao": round(af_manut_v, 2),
+}
+hist = pd.read_csv(HIST_FILE, dtype={"data": str}) if HIST_FILE.exists() else pd.DataFrame(columns=list(linha_hoje))
+if os.environ.get("GRAVAR_HISTORICO") == "1" and FONTE_DADOS == "api" and hoje_txt not in set(hist["data"]):
+    hist = pd.concat([hist, pd.DataFrame([linha_hoje])], ignore_index=True) if len(hist) else pd.DataFrame([linha_hoje])
+    hist.to_csv(HIST_FILE, index=False)
+    print(f"Histórico de ocupação: gravado {hoje_txt} ({len(hist)} dias).")
+if hoje_txt in set(hist["data"]):
+    hist_view = hist
+elif len(hist):
+    hist_view = pd.concat([hist, pd.DataFrame([linha_hoje])], ignore_index=True)
+else:
+    hist_view = pd.DataFrame([linha_hoje])
+og_historico = [
+    {"data": r["data"],
+     "ocup_fisica_pct": r["em_contrato"] / r["maquinas"] * 100 if r["maquinas"] else None,
+     "ocup_financeira_pct": r["capital_contrato"] / r["capital_total"] * 100 if r["capital_total"] else None}
+    for _, r in hist_view.sort_values("data").iterrows()
+]
+
+ocupacao_gerencial = {
+    "por_fabricante": og_por_fabricante,
+    "por_tipo": og_por_tipo,
+    "parados_top10": og_parados,
+    "por_idade": og_idade,
+    "meta_ocup_financeira_pct": META_OCUP_FIN,
+    "historico": og_historico,
+}
+
 if fat_saude_total > 0 and faturamento.get("ytd_liquido"):
     quality_notes.append({
         "icon": "🟡",
@@ -530,6 +626,7 @@ data = {
     "potencial": potencial,
     "ativo_fixo": ativo_fixo,
     "ativo_fixo_tipos": ativo_fixo_tipos,
+    "ocupacao_gerencial": ocupacao_gerencial,
     "saude_frota": saude_frota,
     "saude_por_tipo": saude_por_tipo,
     "saude_tabela": saude_tabela,
