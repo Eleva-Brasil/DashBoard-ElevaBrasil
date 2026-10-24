@@ -322,6 +322,89 @@ table.tbl-texto3 th:nth-child(-n+3), table.tbl-texto3 td:nth-child(-n+3){ text-a
 .table-narrow table.tbl-texto3{ font-size:12px; }
 .table-narrow table.tbl-texto3 thead th, .table-narrow table.tbl-texto3 tbody td{ padding:6px 7px; }
 .ms-option.ms-off{ display:none !important; }
+.lbl-short{ display:none; }
+.v-short{ display:none; }
+.yoy-mob{ display:none; }
+
+/* ===== celular ===== */
+@media (max-width:720px){
+  /* menu fixo no topo, 3 abas sempre visíveis */
+  .sidebar{ position:sticky; top:0; z-index:40; background:var(--bg-deep); padding:8px 10px; gap:2px; box-shadow:0 2px 10px rgba(0,0,0,.25); }
+  .sidebar-top{ margin:0 6px 0 0; }
+  .sidebar-logo{ height:28px; padding:5px 8px; }
+  .tab-btn{ flex:1; text-align:center; padding:9px 6px; font-size:13px; }
+  .lbl-long{ display:none; }
+  .lbl-short{ display:inline; }
+
+  /* cabeçalho compacto: um logo só (o do menu), título em uma linha */
+  .header{ padding:0 2px 4px; gap:4px; }
+  .header .logo{ display:none; }
+  .title-block h1{ font-size:19px; }
+  .title-block .sub{ font-size:12px; }
+  .header-right{ text-align:left; font-size:11.5px; }
+  .hdr-fonte{ display:none; }
+  .section-title{ margin:20px 2px 10px; flex-wrap:wrap; row-gap:2px; }
+
+  /* cartões em 2 colunas; o primeiro de cada grupo ocupa a linha inteira */
+  .grid{ gap:10px; }
+  .grid-5, .grid-3{ grid-template-columns:1fr 1fr; }
+  .grid-5 > :first-child, .grid-3 > :first-child{ grid-column:1 / -1; }
+  .card{ padding:13px 14px; }
+  .card h3{ font-size:11px; margin-bottom:8px; }
+  .kpi-value, .grid-5 .kpi-value{ font-size:23px; }
+  .grid-5 > :first-child .kpi-value, .grid-3 > :first-child .kpi-value{ font-size:30px; }
+  .kpi-unit{ font-size:12px; }
+  .kpi-row{ flex-wrap:wrap; row-gap:0; }
+  .kpi-value{ white-space:nowrap; }
+  .kpi-sub{ font-size:11.5px; }
+
+  /* Comparativo Anual: versão própria */
+  .yoy-desk{ display:none; }
+  .yoy-mob{ display:block; }
+
+  /* tabelas: só as colunas essenciais, sem arrastar para o lado */
+  table.tbl-disp th:nth-child(3), table.tbl-disp td:nth-child(3){ display:none; }
+  #tabelaModelos{ min-width:0; }
+  #tabelaModelos{ font-size:12px; }
+  #tabelaModelos thead th, #tabelaModelos tbody td{ padding:6px 5px; }
+  .table-card{ padding:14px 12px 8px; }
+  #tabelaModelos th:nth-child(2), #tabelaModelos td:nth-child(2),
+  #tabelaModelos th:nth-child(3), #tabelaModelos td:nth-child(3),
+  #tabelaModelos th:nth-child(7), #tabelaModelos td:nth-child(7),
+  #tabelaModelos th:nth-child(9), #tabelaModelos td:nth-child(9){ display:none; }
+  #tabelaSaude, table.tbl-nunca{ min-width:0; }
+  #tabelaSaude th:nth-child(3), #tabelaSaude td:nth-child(3),
+  #tabelaSaude th:nth-child(4), #tabelaSaude td:nth-child(4),
+  #tabelaSaude th:nth-child(6), #tabelaSaude td:nth-child(6),
+  #tabelaSaude th:nth-child(7), #tabelaSaude td:nth-child(7),
+  #tabelaSaude th:nth-child(8), #tabelaSaude td:nth-child(8),
+  #tabelaSaude th:nth-child(10), #tabelaSaude td:nth-child(10){ display:none; }
+  .v-long{ display:none; }
+  .v-short{ display:inline; }
+  table.tbl-equip td.col-patr{ white-space:normal; min-width:98px; }
+  table.tbl-equip td .tag{ font-size:9.5px; padding:1px 5px; }
+  table.tbl-tipo-saude thead th, table.tbl-tipo-af thead th{ white-space:normal; vertical-align:bottom; }
+  table.tbl-tipo-saude thead th, table.tbl-tipo-saude tbody td, table.tbl-tipo-af thead th, table.tbl-tipo-af tbody td{ padding:6px 5px; }
+  table.tbl-tipo-saude td:first-child, table.tbl-tipo-af td:first-child{ max-width:112px; font-size:11px; overflow-wrap:anywhere; }
+  #tabelaSaude{ font-size:11.5px; }
+  #tabelaSaude thead th, #tabelaSaude tbody td{ padding:6px 3px; }
+  #tabelaSaude td.col-patr{ padding-left:2px; }
+  table.tbl-tipo-saude, table.tbl-tipo-af{ min-width:0; font-size:12px; }
+  table.tbl-tipo-saude td:first-child, table.tbl-tipo-af td:first-child{ white-space:normal; }
+  table.tbl-tipo-saude th:nth-child(3), table.tbl-tipo-saude td:nth-child(3),
+  table.tbl-tipo-saude th:nth-child(4), table.tbl-tipo-saude td:nth-child(4),
+  table.tbl-tipo-saude th:nth-child(5), table.tbl-tipo-saude td:nth-child(5),
+  table.tbl-tipo-af th:nth-child(3), table.tbl-tipo-af td:nth-child(3),
+  table.tbl-tipo-af th:nth-child(5), table.tbl-tipo-af td:nth-child(5){ display:none; }
+  table.tbl-equip td.col-patr::after{ content:attr(data-sub); display:block; margin-top:1px; font-size:11px; font-weight:400; color:var(--ink-muted); }
+  #tabelaSaude th:nth-child(2), #tabelaSaude td:nth-child(2),
+  #tabelaSaude th:nth-child(5), #tabelaSaude td:nth-child(5),
+  table.tbl-nunca th:nth-child(2), table.tbl-nunca td:nth-child(2),
+  table.tbl-nunca th:nth-child(5), table.tbl-nunca td:nth-child(5),
+  table.tbl-nunca th:nth-child(3), table.tbl-nunca td:nth-child(3),
+  table.tbl-nunca th:nth-child(4), table.tbl-nunca td:nth-child(4),
+  table.tbl-nunca th:nth-child(6), table.tbl-nunca td:nth-child(6){ display:none; }
+}
 table.tbl-equip tbody tr:hover td{ background:#f7f9fc; }
 table.tbl-equip td.col-patr{ font-weight:600; }
 tbody tr:hover{ background:#f7f9fc; }
@@ -384,7 +467,7 @@ header_html = f"""
   </div>
   <div class="header-right">
     Atualizado em <b>{D['gerado_em']}</b><br/>
-    Fonte: Faturamento, Status de Máquinas e Taxa de Ocupação
+    <span class="hdr-fonte">Fonte: Faturamento, Status de Máquinas e Taxa de Ocupação</span>
   </div>
 </div>
 """
@@ -532,13 +615,46 @@ for i, m in enumerate(comp_meses):
         )
     yoy_labels.append(f'<text class="axis-label" x="{gx+group_w/2:.1f}" y="{yoy_h-6}" text-anchor="middle">{m["mes_label"]}</text>')
 
+# Versão celular: viewBox estreito e alto, sem rótulo de valor em cada barra
+# (ficariam ilegíveis); o valor aparece no toque, pelo mesmo tooltip.
+ym_w, ym_h = 360, 230
+ym_pad_l, ym_pad_r, ym_pad_t, ym_pad_b = 4, 4, 8, 22
+ym_plot_h = ym_h - ym_pad_t - ym_pad_b
+ym_group_w = (ym_w - ym_pad_l - ym_pad_r) / n_months
+ym_bar_w = (ym_group_w - 6 - 2) / 2
+ym_parts = []
+mes_corrente = max((mm["mes"] for mm in comp_meses if mm["atual"] is not None), default=None)
+for i, m in enumerate(comp_meses):
+    gx = ym_pad_l + i * ym_group_w
+    for j, (valor, ano, cor) in enumerate([
+        (m["anterior"], comp["ano_anterior"], "var(--ink-muted)"),
+        (m["atual"], comp["ano_atual"], "var(--neutral)" if m["mes"] == mes_corrente else "var(--good)"),
+    ]):
+        if valor is None:
+            continue
+        bh = valor / comp_vmax * ym_plot_h
+        bx = gx + 3 + j * (ym_bar_w + 2)
+        sufixo = " (parcial)" if j == 1 and m["mes"] == mes_corrente else ""
+        ym_parts.append(
+            f'<rect class="bar" x="{bx:.1f}" y="{ym_pad_t + ym_plot_h - bh:.1f}" width="{ym_bar_w:.1f}" height="{max(bh, 2):.1f}" rx="2" '
+            f'fill="{cor}" data-label="{m["mes_label"]}/{str(ano)[2:]}{sufixo}" data-value="{brl_m(valor)}"></rect>'
+        )
+    ym_parts.append(f'<text class="axis-label" x="{gx + ym_group_w / 2:.1f}" y="{ym_h - 6}" text-anchor="middle">{m["mes_label"]}</text>')
+
 yoy_svg = f"""
-<div class="chart-wrap">
+<div class="chart-wrap yoy-desk">
   <svg viewBox="0 0 {yoy_w} {yoy_h}" width="100%" height="{yoy_h}" id="yoyChart">
     {''.join(yoy_bars)}
     {''.join(yoy_labels)}
   </svg>
   <div class="tooltip" id="yoyTooltip"></div>
+</div>
+<div class="chart-wrap yoy-mob">
+  <svg viewBox="0 0 {ym_w} {ym_h}" width="100%" id="yoyChartMob">
+    {''.join(ym_parts)}
+  </svg>
+  <div class="tooltip" id="yoyTooltipMob"></div>
+  <div class="hint" style="text-align:center;margin-top:2px;">Toque numa barra para ver o valor</div>
 </div>
 """
 
@@ -633,7 +749,7 @@ modelos_table_card = f"""
   <div class="tbl-scroll">
     <table id="tabelaModelos" class="tbl-texto3">
       <thead><tr>
-        <th>Modelo</th><th>Fabricante</th><th>Tipo</th><th>Disponível</th><th>Contrato</th><th>Manutenção</th><th>Total</th><th>Ocupação %</th><th>Observação</th>
+        <th>Modelo</th><th>Fabricante</th><th>Tipo</th><th><span class="lbl-long">Disponível</span><span class="lbl-short">Disp.</span></th><th><span class="lbl-long">Contrato</span><span class="lbl-short">Contr.</span></th><th><span class="lbl-long">Manutenção</span><span class="lbl-short">Manut.</span></th><th>Total</th><th><span class="lbl-long">Ocupação %</span><span class="lbl-short">Ocup.</span></th><th>Observação</th>
       </tr></thead>
       <tbody>{''.join(rows)}</tbody>
     </table>
@@ -658,7 +774,7 @@ equip_disp_card = f"""
 <div class="table-card table-narrow">
   <h3>Equipamentos Disponíveis</h3>
   <div class="tbl-scroll">
-    <table class="tbl-texto3">
+    <table class="tbl-texto3 tbl-disp">
       <thead><tr>
         <th>Modelo</th><th>Fabricante</th><th>Tipo</th><th>Nº de Série</th>
       </tr></thead>
@@ -708,7 +824,7 @@ af_page = f"""
     </div>
     <div class="header-right">
       Atualizado em <b>{af['gerado_em']}</b><br/>
-      Fonte: Status ao vivo (API LOC1) + Valor de Compra (planilha Ativo Fixo)
+      <span class="hdr-fonte">Fonte: Status ao vivo (API LOC1) + Valor de Compra (planilha Ativo Fixo)</span>
     </div>
   </div>
 
@@ -754,7 +870,7 @@ af_page = f"""
   <div class="section-title"><h2>Por Tipo de Equipamento</h2><span class="hint">Ordenado por total de equipamentos</span></div>
   <div class="table-card">
     <div class="tbl-scroll">
-      <table>
+      <table class="tbl-tipo-af">
         <thead><tr>
           <th>Tipo</th><th>Total</th><th>Disponível</th><th>Em Contrato</th><th>Em Manutenção</th><th>Valor Aquisição</th>
         </tr></thead>
@@ -825,18 +941,28 @@ def status_html(status):
     return f'<span class="st {cls}">{rotulo}</span>'
 
 
+def sub_patr(e):
+    """Linha de apoio sob o Patrimônio no celular (Modelo · Status)."""
+    return f"{e['modelo']} · {STATUS_ROTULO.get(e['status'], (e['status'],))[0]}"
+
+
+def valor_duplo(v):
+    """Valor completo no computador, resumido (R$ 1,15 M) no celular."""
+    return f'<span class="v-long">{brl(v, 0)}</span><span class="v-short">{brl_m(v)}</span>'
+
+
 sf_nunca_rows = []
 for e in sf_nunca_lista:
     idade_txt = f"{e['idade_anos']:.1f} anos".replace(".", ",") if e["idade_anos"] is not None else "—"
     sf_nunca_rows.append(f"""<tr>
-      <td class="col-patr">{e['patrimonio']}</td>
+      <td class="col-patr" data-sub="{sub_patr(e)}">{e['patrimonio']}</td>
       <td>{e['modelo']}</td>
       <td>{e['fabricante']}</td>
       <td>{e['tipo'].title()}</td>
       <td>{status_html(e['status'])}</td>
       <td>{e['data_compra'] or '—'}</td>
       <td>{idade_txt}</td>
-      <td>{brl(e['valor_compra'], 0)}</td>
+      <td>{valor_duplo(e['valor_compra'])}</td>
     </tr>""")
 
 sf_nunca_card = f"""
@@ -844,7 +970,7 @@ sf_nunca_card = f"""
   <h3>Equipamentos que Nunca Geraram Faturamento</h3>
   <span class="hint" id="sfNuncaHint">{fmt_int(sf['qtd_nunca_alugado'])} no total ({fmt_int(sf['qtd_nunca_alugado_disponivel'])} disponíveis agora) &middot; {brl_m(sf['valor_nunca_alugado'])} em capital parado &middot; os 15 de maior valor investido</span>
   <div class="tbl-scroll">
-    <table class="tbl-equip">
+    <table class="tbl-equip tbl-nunca">
       <thead><tr>
         <th>Patrimônio</th><th>Modelo</th><th>Fabricante</th><th>Tipo</th><th>Status</th><th>Data de Compra</th><th>Idade</th><th>Valor de Compra</th>
       </tr></thead>
@@ -873,7 +999,7 @@ sf_por_tipo_card = f"""
   <h3>Saúde da Frota por Tipo de Equipamento</h3>
   <span class="hint">Ordenado por valor investido &middot; Lucro = Faturamento acumulado &minus; Despesas acumuladas &middot; ROI% = Lucro &divide; Valor de Compra</span>
   <div class="tbl-scroll">
-    <table>
+    <table class="tbl-tipo-saude">
       <thead><tr>
         <th>Tipo</th><th>Qtd.</th><th>Valor de Compra</th><th>Faturamento Acum.</th><th>Despesas Acum.</th><th>Lucro Acum.</th><th>ROI %</th>
       </tr></thead>
@@ -891,7 +1017,7 @@ for e in sf_tabela:
     tipo_title = e['tipo'].title()
     registro_flag = "" if e["tem_registro_financeiro"] else '<span class="tag warning">sem registro</span>'
     sf_rows.append(f"""<tr data-patrimonio="{e['patrimonio']}" data-modelo="{e['modelo']}" data-fabricante="{e['fabricante']}" data-tipo="{tipo_title}" data-status="{e['status']}">
-      <td class="col-patr">{e['patrimonio']}</td>
+      <td class="col-patr" data-sub="{sub_patr(e)}">{e['patrimonio']}</td>
       <td>{e['modelo']}</td>
       <td>{e['fabricante']}</td>
       <td>{tipo_title}</td>
@@ -899,9 +1025,9 @@ for e in sf_tabela:
       <td>{e['data_compra'] or '—'}</td>
       <td>{idade_txt}</td>
       <td>{brl(e['valor_compra'], 0)}</td>
-      <td>{registro_flag or brl(e['faturamento'], 0)}</td>
+      <td>{registro_flag or valor_duplo(e['faturamento'])}</td>
       <td>{brl(e['despesas'], 0)}</td>
-      <td>{brl(e['lucro'], 0)}</td>
+      <td>{valor_duplo(e['lucro'])}</td>
       <td class="{roi_cls}">{roi_txt}</td>
     </tr>""")
 
@@ -917,7 +1043,7 @@ sf_tabela_card = f"""
   <div class="tbl-scroll">
     <table id="tabelaSaude" class="tbl-equip">
       <thead><tr>
-        <th>Patrimônio</th><th>Modelo</th><th>Fabricante</th><th>Tipo</th><th>Status</th><th>Data de Compra</th><th>Idade</th><th>Valor de Compra</th><th>Faturamento Acum.</th><th>Despesas Acum.</th><th>Lucro Acum.</th><th>ROI %</th>
+        <th>Patrimônio</th><th>Modelo</th><th>Fabricante</th><th>Tipo</th><th>Status</th><th>Data de Compra</th><th>Idade</th><th>Valor de Compra</th><th><span class="lbl-long">Faturamento Acum.</span><span class="lbl-short">Fat.</span></th><th>Despesas Acum.</th><th><span class="lbl-long">Lucro Acum.</span><span class="lbl-short">Lucro</span></th><th>ROI %</th>
       </tr></thead>
       <tbody id="tabelaSaudeBody">{''.join(sf_rows)}</tbody>
     </table>
@@ -1004,7 +1130,7 @@ sf_page = f"""
     </div>
     <div class="header-right">
       Atualizado em <b>{sf['gerado_em']}</b><br/>
-      Fonte: Status ao vivo (API LOC1) + Ativo Fixo + Faturamento e Despesa por Equipamento
+      <span class="hdr-fonte">Fonte: Status ao vivo (API LOC1) + Ativo Fixo + Faturamento e Despesa por Equipamento</span>
     </div>
   </div>
 
@@ -1147,9 +1273,14 @@ JS = """
         bar.style.opacity = 0.75;
       });
       bar.addEventListener('mouseleave', function(){ tip.style.opacity = 0; bar.style.opacity = 1; });
+      bar.addEventListener('click', function(e){
+        bars.forEach(function(b){ b.style.opacity = 1; });
+        bar.dispatchEvent(new MouseEvent('mousemove', {clientX: e.clientX, clientY: e.clientY}));
+      });
     });
   }
   wireChart('yoyChart', 'yoyTooltip');
+  wireChart('yoyChartMob', 'yoyTooltipMob');
 
   var tabBtns = document.querySelectorAll('.tab-btn');
   tabBtns.forEach(function(btn){
@@ -1159,6 +1290,7 @@ JS = """
       btn.classList.add('active');
       document.querySelectorAll('.tab-page').forEach(function(p){ p.classList.remove('active'); });
       document.getElementById('tab-' + target).classList.add('active');
+      if(window.innerWidth <= 900) window.scrollTo(0, 0);
     });
   });
 
@@ -1486,8 +1618,9 @@ JS = """
       document.getElementById('sfNuncaHint').textContent = sfFmtInt(nuncaAlugado.length) + ' no total (' + sfFmtInt(nuncaDisp) + ' disponíveis agora) · ' + sfBrlM(valorNunca) + ' em capital parado · os 15 de maior valor investido';
       document.getElementById('sfNuncaTbody').innerHTML = nuncaTop.map(function(e){
         var idadeTxt = e.idade !== null ? e.idade.toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1}) + ' anos' : '—';
-        return '<tr><td class="col-patr">' + e.patrimonio + '</td><td>' + e.modelo + '</td><td>' + e.fabricante + '</td><td>' + e.tipo + '</td>' +
-          '<td>' + sfStatusHtml(e.status) + '</td><td>' + (e.data_compra || '—') + '</td><td>' + idadeTxt + '</td><td>' + sfBrl(e.valor_compra) + '</td></tr>';
+        var subPatr = e.modelo + ' · ' + (sfStatusRotulo[e.status] || [e.status])[0];
+        return '<tr><td class="col-patr" data-sub="' + subPatr + '">' + e.patrimonio + '</td><td>' + e.modelo + '</td><td>' + e.fabricante + '</td><td>' + e.tipo + '</td>' +
+          '<td>' + sfStatusHtml(e.status) + '</td><td>' + (e.data_compra || '—') + '</td><td>' + idadeTxt + '</td><td><span class="v-long">' + sfBrl(e.valor_compra) + '</span><span class="v-short">' + sfBrlM(e.valor_compra) + '</span></td></tr>';
       }).join('') || '<tr><td colspan="8">Nenhum equipamento neste filtro.</td></tr>';
 
       // Tabela "Saúde da Frota por Tipo de Equipamento" (ordenada por valor investido)
@@ -1544,9 +1677,9 @@ html = f"""<!doctype html>
       <img class="sidebar-logo" src="data:image/png;base64,{LOGO_B64}" alt="Eleva Brasil" />
       <button class="sidebar-toggle" id="sidebarCollapse" title="Ocultar menu" aria-label="Ocultar menu">&laquo;</button>
     </div>
-    <button class="tab-btn active" data-tab="exec">Visão Executiva</button>
-    <button class="tab-btn" data-tab="af">Ocupação Financeira da Frota</button>
-    <button class="tab-btn" data-tab="saude">Saúde da Frota</button>
+    <button class="tab-btn active" data-tab="exec"><span class="lbl-long">Visão Executiva</span><span class="lbl-short">Executiva</span></button>
+    <button class="tab-btn" data-tab="af"><span class="lbl-long">Ocupação Financeira da Frota</span><span class="lbl-short">Ocupação</span></button>
+    <button class="tab-btn" data-tab="saude"><span class="lbl-long">Saúde da Frota</span><span class="lbl-short">Saúde</span></button>
   </nav>
   <button class="sidebar-toggle sidebar-toggle-open" id="sidebarExpand" title="Mostrar menu" aria-label="Mostrar menu">&raquo;</button>
   <div class="app-main">
