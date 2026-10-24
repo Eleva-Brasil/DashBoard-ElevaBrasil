@@ -195,10 +195,20 @@ piv["Disponibilidade_pct"] = piv["Disponivel"] / piv["Total"] * 100
 piv["Manutencao_pct"] = piv["Em Manutenção"] / piv["Total"] * 100
 piv = piv.reset_index().sort_values("Total", ascending=False)
 
+# Fabricante por Modelo (a API não expõe a marca) - de-para mantido em
+# fabricante_mapping.csv; modelo novo sem cadastro aparece como "Não identificado".
+FABRICANTE_POR_MODELO = pd.read_csv(BASE / "fabricante_mapping.csv", dtype=str).set_index("Modelo")["Fabricante"].to_dict()
+
+
+def fabricante(modelo):
+    return FABRICANTE_POR_MODELO.get(modelo, "Não identificado")
+
+
 modelos_tabela = []
 for _, r in piv.iterrows():
     modelos_tabela.append({
         "modelo": r["Modelo"],
+        "fabricante": fabricante(r["Modelo"]),
         "tipo": r["Tipo do Modelo"],
         "disponivel": int(r["Disponivel"]),
         "contrato": int(r["Em Contrato"]),
@@ -224,6 +234,7 @@ for _, r in disponiveis_df.iterrows():
     equipamentos_disponiveis.append({
         "patrimonio": r["Nº do item"],
         "modelo": r["Modelo"],
+        "fabricante": fabricante(r["Modelo"]),
         "tipo": r["Tipo do Modelo"],
         "serie": r["Nº de série"],
         "serie_fabricante": r["Nº de série do fabricante"],
@@ -372,6 +383,7 @@ for _, r in nunca_alugado.sort_values("Valor de Compra", ascending=False).head(1
     saude_nunca_alugado_lista.append({
         "patrimonio": r["Nº de série"],
         "modelo": r["Modelo"],
+        "fabricante": fabricante(r["Modelo"]),
         "tipo": r["Tipo do Modelo"],
         "status": r["Status"],
         "idade_anos": round(r["Idade (anos)"], 1) if pd.notna(r["Idade (anos)"]) else None,
@@ -401,6 +413,7 @@ for _, r in saude.sort_values("Lucro Acumulado", ascending=False).iterrows():
     saude_tabela.append({
         "patrimonio": r["Nº de série"],
         "modelo": r["Modelo"],
+        "fabricante": fabricante(r["Modelo"]),
         "tipo": r["Tipo do Modelo"],
         "status": r["Status"],
         "idade_anos": round(r["Idade (anos)"], 1) if pd.notna(r["Idade (anos)"]) else None,

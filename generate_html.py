@@ -60,10 +60,18 @@ def fmt_int(v):
 ROTULO_OPCAO = {"Disponivel": "Disponível"}  # valor interno (LOC1) -> texto exibido
 
 
+def ordem_alfabetica(valores):
+    """Ordena opções de filtro alfabeticamente ignorando acento e maiúsculas."""
+    import unicodedata
+    chave = lambda v: unicodedata.normalize("NFKD", ROTULO_OPCAO.get(v, v)).encode("ascii", "ignore").decode().casefold()
+    return sorted(set(valores), key=chave)
+
+
 def multiselect_html(elem_id, label, options):
     """Filtro de seleção múltipla (botão + painel com checkboxes e busca).
     O JS (wireMultiSelect, no bloco <script> final) liga o comportamento -
     aqui só o HTML/estado inicial (nada selecionado = "todos")."""
+    options = ordem_alfabetica(options)
     opts_html = "".join(f'<label class="ms-option"><input type="checkbox" value="{o}"/><span>{ROTULO_OPCAO.get(o, o)}</span></label>' for o in options)
     if not options:
         opts_html = '<div class="ms-empty">Nenhuma opção disponível.</div>'
@@ -306,10 +314,14 @@ tbody td{ padding:6px 8px; text-align:right; border-bottom:1px solid #f1f3f6; wh
 tbody td:first-child, tbody td:nth-child(2){ text-align:left; }
 /* tabelas por equipamento (Saúde da Frota): texto à esquerda, data ao centro, números à direita */
 table.tbl-equip{ font-size:12px; font-variant-numeric:tabular-nums; }
-table.tbl-equip thead th, table.tbl-equip tbody td{ padding:6px 8px; }
+table.tbl-equip thead th, table.tbl-equip tbody td{ padding:6px 7px; }
 table.tbl-equip thead th{ white-space:normal; vertical-align:bottom; line-height:1.25; }
-table.tbl-equip th:nth-child(-n+4), table.tbl-equip td:nth-child(-n+4){ text-align:left; }
-table.tbl-equip th:nth-child(5), table.tbl-equip td:nth-child(5){ text-align:center; }
+table.tbl-equip th:nth-child(-n+5), table.tbl-equip td:nth-child(-n+5){ text-align:left; }
+table.tbl-equip th:nth-child(6), table.tbl-equip td:nth-child(6){ text-align:center; }
+table.tbl-texto3 th:nth-child(-n+3), table.tbl-texto3 td:nth-child(-n+3){ text-align:left; }
+.table-narrow table.tbl-texto3{ font-size:12px; }
+.table-narrow table.tbl-texto3 thead th, .table-narrow table.tbl-texto3 tbody td{ padding:6px 7px; }
+.ms-option.ms-off{ display:none !important; }
 table.tbl-equip tbody tr:hover td{ background:#f7f9fc; }
 table.tbl-equip td.col-patr{ font-weight:600; }
 tbody tr:hover{ background:#f7f9fc; }
@@ -589,8 +601,9 @@ for m in modelos:
     obs_label = obs_labels.get(obs_kind, "")
     flag = f'<span class="tag {obs_kind}">{obs_label.lower()}</span>' if obs_kind else ""
     tipo_title = m['tipo'].title()
-    rows.append(f"""<tr data-modelo="{m['modelo']}" data-tipo="{tipo_title}" data-obs="{obs_label or "Sem observação"}">
+    rows.append(f"""<tr data-modelo="{m['modelo']}" data-fabricante="{m['fabricante']}" data-tipo="{tipo_title}" data-obs="{obs_label or "Sem observação"}">
       <td>{m['modelo']}</td>
+      <td>{m['fabricante']}</td>
       <td>{tipo_title}</td>
       <td class="{disp_cls}">{fmt_int(m['disponivel'])}</td>
       <td>{fmt_int(m['contrato'])}</td>
@@ -601,6 +614,7 @@ for m in modelos:
     </tr>""")
 
 modelos_unicos = sorted({m['modelo'] for m in modelos})
+fabricantes_unicos = sorted({m['fabricante'] for m in modelos})
 tipos_unicos = sorted({m['tipo'].title() for m in modelos})
 obs_unicas = ["Manutenção crítica", "Capital parado", "Alta demanda", "Sem observação"]
 
@@ -609,16 +623,17 @@ modelos_table_card = f"""
   <h3>Disponibilidade por Modelo</h3>
   <span class="hint">{len(modelos)} modelos &middot; ordenado por total de equipamentos &middot; role para ver todos &middot; filtros permitem selecionar mais de um valor</span>
   <div class="filter-row">
-    {multiselect_html('filtroModelo', 'Modelo', modelos_unicos)}
     {multiselect_html('filtroTipo', 'Tipo', tipos_unicos)}
+    {multiselect_html('filtroFabricante', 'Fabricante', fabricantes_unicos)}
+    {multiselect_html('filtroModelo', 'Modelo', modelos_unicos)}
     {multiselect_html('filtroObs', 'Observação', obs_unicas)}
     <button class="filter-clear" id="filtroLimpar" type="button">Limpar</button>
     <span class="hint" id="filtroContagem"></span>
   </div>
   <div class="tbl-scroll">
-    <table id="tabelaModelos">
+    <table id="tabelaModelos" class="tbl-texto3">
       <thead><tr>
-        <th>Modelo</th><th>Tipo</th><th>Disponível</th><th>Contrato</th><th>Manutenção</th><th>Total</th><th>Ocupação %</th><th>Observação</th>
+        <th>Modelo</th><th>Fabricante</th><th>Tipo</th><th>Disponível</th><th>Contrato</th><th>Manutenção</th><th>Total</th><th>Ocupação %</th><th>Observação</th>
       </tr></thead>
       <tbody>{''.join(rows)}</tbody>
     </table>
@@ -634,6 +649,7 @@ equip_rows = []
 for e in equip_disp:
     equip_rows.append(f"""<tr>
       <td>{e['modelo']}</td>
+      <td>{e['fabricante']}</td>
       <td>{e['tipo'].title()}</td>
       <td>{e['serie']}</td>
     </tr>""")
@@ -642,9 +658,9 @@ equip_disp_card = f"""
 <div class="table-card table-narrow">
   <h3>Equipamentos Disponíveis</h3>
   <div class="tbl-scroll">
-    <table>
+    <table class="tbl-texto3">
       <thead><tr>
-        <th>Modelo</th><th>Tipo</th><th>Nº de Série</th>
+        <th>Modelo</th><th>Fabricante</th><th>Tipo</th><th>Nº de Série</th>
       </tr></thead>
       <tbody>{''.join(equip_rows)}</tbody>
     </table>
@@ -815,6 +831,7 @@ for e in sf_nunca_lista:
     sf_nunca_rows.append(f"""<tr>
       <td class="col-patr">{e['patrimonio']}</td>
       <td>{e['modelo']}</td>
+      <td>{e['fabricante']}</td>
       <td>{e['tipo'].title()}</td>
       <td>{status_html(e['status'])}</td>
       <td>{e['data_compra'] or '—'}</td>
@@ -829,7 +846,7 @@ sf_nunca_card = f"""
   <div class="tbl-scroll">
     <table class="tbl-equip">
       <thead><tr>
-        <th>Patrimônio</th><th>Modelo</th><th>Tipo</th><th>Status</th><th>Data de Compra</th><th>Idade</th><th>Valor de Compra</th>
+        <th>Patrimônio</th><th>Modelo</th><th>Fabricante</th><th>Tipo</th><th>Status</th><th>Data de Compra</th><th>Idade</th><th>Valor de Compra</th>
       </tr></thead>
       <tbody id="sfNuncaTbody">{''.join(sf_nunca_rows)}</tbody>
     </table>
@@ -873,9 +890,10 @@ for e in sf_tabela:
     idade_txt = f"{e['idade_anos']:.1f} anos".replace(".", ",") if e["idade_anos"] is not None else "—"
     tipo_title = e['tipo'].title()
     registro_flag = "" if e["tem_registro_financeiro"] else '<span class="tag warning">sem registro</span>'
-    sf_rows.append(f"""<tr data-patrimonio="{e['patrimonio']}" data-modelo="{e['modelo']}" data-tipo="{tipo_title}" data-status="{e['status']}">
+    sf_rows.append(f"""<tr data-patrimonio="{e['patrimonio']}" data-modelo="{e['modelo']}" data-fabricante="{e['fabricante']}" data-tipo="{tipo_title}" data-status="{e['status']}">
       <td class="col-patr">{e['patrimonio']}</td>
       <td>{e['modelo']}</td>
+      <td>{e['fabricante']}</td>
       <td>{tipo_title}</td>
       <td>{status_html(e['status'])}</td>
       <td>{e['data_compra'] or '—'}</td>
@@ -888,6 +906,7 @@ for e in sf_tabela:
     </tr>""")
 
 sf_modelos_unicos = sorted({e['modelo'] for e in sf_tabela})
+sf_fabricantes_unicos = sorted({e['fabricante'] for e in sf_tabela})
 sf_tipos_unicos = sorted({e['tipo'].title() for e in sf_tabela})
 sf_status_unicos = ["Disponivel", "Em Contrato", "Em Manutenção"]
 
@@ -898,7 +917,7 @@ sf_tabela_card = f"""
   <div class="tbl-scroll">
     <table id="tabelaSaude" class="tbl-equip">
       <thead><tr>
-        <th>Patrimônio</th><th>Modelo</th><th>Tipo</th><th>Status</th><th>Data de Compra</th><th>Idade</th><th>Valor de Compra</th><th>Faturamento Acum.</th><th>Despesas Acum.</th><th>Lucro Acum.</th><th>ROI %</th>
+        <th>Patrimônio</th><th>Modelo</th><th>Fabricante</th><th>Tipo</th><th>Status</th><th>Data de Compra</th><th>Idade</th><th>Valor de Compra</th><th>Faturamento Acum.</th><th>Despesas Acum.</th><th>Lucro Acum.</th><th>ROI %</th>
       </tr></thead>
       <tbody id="tabelaSaudeBody">{''.join(sf_rows)}</tbody>
     </table>
@@ -910,7 +929,7 @@ sf_tabela_card = f"""
 # (sem round-trip ao servidor) - só campos já públicos, sem dado de cliente.
 sf_raw_json = json.dumps([
     {
-        "patrimonio": e["patrimonio"], "modelo": e["modelo"], "tipo": e["tipo"].title(),
+        "patrimonio": e["patrimonio"], "modelo": e["modelo"], "fabricante": e["fabricante"], "tipo": e["tipo"].title(),
         "status": e["status"], "data_compra": e["data_compra"], "idade": e["idade_anos"], "valor_compra": e["valor_compra"],
         "faturamento": e["faturamento"], "despesas": e["despesas"], "lucro": e["lucro"],
         "roi": e["roi_pct"], "tem_registro": e["tem_registro_financeiro"],
@@ -921,10 +940,11 @@ sf_raw_json = json.dumps([
 sf_filtro_card = f"""
 <div class="table-card" style="margin-bottom:14px;">
   <h3>Filtrar Frota</h3>
-  <span class="hint">Selecione um ou mais valores de Tipo, Modelo e/ou Status, e/ou busque por Patrimônio - todos os números, gráficos e tabelas desta página recalculam na hora</span>
+  <span class="hint">Selecione um ou mais valores de Tipo, Fabricante, Modelo e/ou Status, e/ou busque por Patrimônio - todos os números, gráficos e tabelas desta página recalculam na hora</span>
   <div class="filter-row" style="margin-top:10px;">
     <input class="filter-select filter-search" type="text" id="sfTopPatrimonio" placeholder="Buscar patrimônio" autocomplete="off" />
     {multiselect_html('sfTopTipo', 'Tipo', sf_tipos_unicos)}
+    {multiselect_html('sfTopFabricante', 'Fabricante', sf_fabricantes_unicos)}
     {multiselect_html('sfTopModelo', 'Modelo', sf_modelos_unicos)}
     {multiselect_html('sfTopStatus', 'Status', sf_status_unicos)}
     <button class="filter-clear" id="sfTopLimpar" type="button">Limpar filtros</button>
@@ -1197,7 +1217,7 @@ JS = """
     var actNone = wrap.querySelector('[data-act="none"]');
     if(actAll) actAll.addEventListener('click', function(e){
       e.preventDefault();
-      checkboxes.forEach(function(cb){ if(cb.parentElement.style.display !== 'none'){ cb.checked = true; selected.add(cb.value); } });
+      checkboxes.forEach(function(cb){ if(cb.parentElement.style.display !== 'none' && !cb.parentElement.classList.contains('ms-off')){ cb.checked = true; selected.add(cb.value); } });
       updateBtn(); onChange();
     });
     if(actNone) actNone.addEventListener('click', function(e){
@@ -1216,8 +1236,45 @@ JS = """
 
     return {
       getSelected: function(){ return selected; },
-      clear: function(){ checkboxes.forEach(function(cb){ cb.checked = false; }); selected.clear(); updateBtn(); }
+      clear: function(){ checkboxes.forEach(function(cb){ cb.checked = false; }); selected.clear(); updateBtn(); },
+      // Mostra só as opções que existem dados com os outros filtros aplicados;
+      // opção marcada que ficou indisponível é desmarcada. Devolve true se mudou a seleção.
+      setAvailable: function(avail){
+        var mudou = false;
+        checkboxes.forEach(function(cb){
+          var ok = avail.has(cb.value);
+          cb.parentElement.classList.toggle('ms-off', !ok);
+          if(!ok && cb.checked){ cb.checked = false; selected.delete(cb.value); mudou = true; }
+        });
+        if(mudou) updateBtn();
+        return mudou;
+      }
     };
+  }
+
+  // Filtros encadeados: cada filtro só oferece valores que existem nos itens
+  // que passam pelos OUTROS filtros (ex.: Tipo = Manipulador -> Modelo e
+  // Fabricante só listam manipuladores). filtros = [{ms, valor: item -> string}];
+  // base = predicado extra aplicado a todos (ex.: busca por patrimônio).
+  function encadearFiltros(itens, filtros, base){
+    var mudou;
+    do {
+      mudou = false;
+      filtros.forEach(function(f){
+        if(!f.ms) return;
+        var disponiveis = new Set();
+        itens.forEach(function(it){
+          if(base && !base(it)) return;
+          var passa = filtros.every(function(g){
+            if(g === f || !g.ms) return true;
+            var sel = g.ms.getSelected();
+            return sel.size === 0 || sel.has(g.valor(it));
+          });
+          if(passa) disponiveis.add(f.valor(it));
+        });
+        if(f.ms.setAvailable(disponiveis)) mudou = true;
+      });
+    } while(mudou);
   }
   document.addEventListener('click', function(){
     document.querySelectorAll('.ms-panel.open').forEach(function(p){ p.classList.remove('open'); });
@@ -1228,24 +1285,31 @@ JS = """
     var contagem = document.getElementById('filtroContagem');
     var linhas = Array.prototype.slice.call(tabela.querySelectorAll('tbody tr'));
 
+    function attr(nome){ return function(tr){ return tr.getAttribute(nome); }; }
     function aplicarFiltros(){
-      var selModelo = msModelo.getSelected(), selTipo = msTipo.getSelected(), selObs = msObs.getSelected();
+      encadearFiltros(linhas, [
+        {ms: msTipo, valor: attr('data-tipo')}, {ms: msFabricante, valor: attr('data-fabricante')},
+        {ms: msModelo, valor: attr('data-modelo')}, {ms: msObs, valor: attr('data-obs')}
+      ]);
+      var selModelo = msModelo.getSelected(), selTipo = msTipo.getSelected(), selObs = msObs.getSelected(), selFab = msFabricante.getSelected();
       var visiveis = 0;
       linhas.forEach(function(tr){
         var ok = (selModelo.size === 0 || selModelo.has(tr.getAttribute('data-modelo')))
+              && (selFab.size === 0 || selFab.has(tr.getAttribute('data-fabricante')))
               && (selTipo.size === 0 || selTipo.has(tr.getAttribute('data-tipo')))
               && (selObs.size === 0 || selObs.has(tr.getAttribute('data-obs')));
         tr.classList.toggle('filtro-oculto', !ok);
         if(ok) visiveis++;
       });
-      contagem.textContent = (selModelo.size || selTipo.size || selObs.size) ? ('· ' + visiveis + ' de ' + linhas.length + ' modelos') : '';
+      contagem.textContent = (selModelo.size || selTipo.size || selObs.size || selFab.size) ? ('· ' + visiveis + ' de ' + linhas.length + ' modelos') : '';
     }
     var msModelo = wireMultiSelect('filtroModelo', aplicarFiltros);
+    var msFabricante = wireMultiSelect('filtroFabricante', aplicarFiltros);
     var msTipo = wireMultiSelect('filtroTipo', aplicarFiltros);
     var msObs = wireMultiSelect('filtroObs', aplicarFiltros);
     var limparBtn = document.getElementById('filtroLimpar');
     if(limparBtn) limparBtn.addEventListener('click', function(){
-      [msModelo, msTipo, msObs].forEach(function(ms){ if(ms) ms.clear(); });
+      [msModelo, msFabricante, msTipo, msObs].forEach(function(ms){ if(ms) ms.clear(); });
       aplicarFiltros();
     });
   }
@@ -1312,21 +1376,32 @@ JS = """
     var sfIdadeFaixas = [[0, 3, '0–2 anos'], [3, 6, '3–5 anos'], [6, 11, '6–10 anos'], [11, 16, '11–15 anos'], [16, 21, '16–20 anos'], [21, Infinity, '+20 anos']];
 
     var sfMsTipo = wireMultiSelect('sfTopTipo', sfRecompute);
+    var sfMsFabricante = wireMultiSelect('sfTopFabricante', sfRecompute);
     var sfMsModelo = wireMultiSelect('sfTopModelo', sfRecompute);
     var sfMsStatus = wireMultiSelect('sfTopStatus', sfRecompute);
     var sfTopPatrimonio = document.getElementById('sfTopPatrimonio');
     var sfTopContagem = document.getElementById('sfTopContagem');
 
     function sfFiltered(){
-      var selTipo = sfMsTipo.getSelected(), selModelo = sfMsModelo.getSelected(), selStatus = sfMsStatus.getSelected();
+      var selTipo = sfMsTipo.getSelected(), selFab = sfMsFabricante.getSelected(), selModelo = sfMsModelo.getSelected(), selStatus = sfMsStatus.getSelected();
       var vPatrimonio = sfTopPatrimonio.value.trim().toUpperCase();
       return sfRaw.filter(function(e){
-        return (selTipo.size === 0 || selTipo.has(e.tipo)) && (selModelo.size === 0 || selModelo.has(e.modelo)) && (selStatus.size === 0 || selStatus.has(e.status))
+        return (selTipo.size === 0 || selTipo.has(e.tipo)) && (selFab.size === 0 || selFab.has(e.fabricante))
+            && (selModelo.size === 0 || selModelo.has(e.modelo)) && (selStatus.size === 0 || selStatus.has(e.status))
             && (!vPatrimonio || e.patrimonio.toUpperCase().indexOf(vPatrimonio) !== -1);
       });
     }
 
+    function sfEncadear(){
+      var vPatrimonio = sfTopPatrimonio.value.trim().toUpperCase();
+      encadearFiltros(sfRaw, [
+        {ms: sfMsTipo, valor: function(e){ return e.tipo; }}, {ms: sfMsFabricante, valor: function(e){ return e.fabricante; }},
+        {ms: sfMsModelo, valor: function(e){ return e.modelo; }}, {ms: sfMsStatus, valor: function(e){ return e.status; }}
+      ], function(e){ return !vPatrimonio || e.patrimonio.toUpperCase().indexOf(vPatrimonio) !== -1; });
+    }
+
     function sfRecompute(){
+      sfEncadear();
       var rows = sfFiltered();
       var n = rows.length;
       var valorCompra = 0, fat = 0, desp = 0, idadeSum = 0, idadeN = 0;
@@ -1411,9 +1486,9 @@ JS = """
       document.getElementById('sfNuncaHint').textContent = sfFmtInt(nuncaAlugado.length) + ' no total (' + sfFmtInt(nuncaDisp) + ' disponíveis agora) · ' + sfBrlM(valorNunca) + ' em capital parado · os 15 de maior valor investido';
       document.getElementById('sfNuncaTbody').innerHTML = nuncaTop.map(function(e){
         var idadeTxt = e.idade !== null ? e.idade.toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1}) + ' anos' : '—';
-        return '<tr><td class="col-patr">' + e.patrimonio + '</td><td>' + e.modelo + '</td><td>' + e.tipo + '</td>' +
+        return '<tr><td class="col-patr">' + e.patrimonio + '</td><td>' + e.modelo + '</td><td>' + e.fabricante + '</td><td>' + e.tipo + '</td>' +
           '<td>' + sfStatusHtml(e.status) + '</td><td>' + (e.data_compra || '—') + '</td><td>' + idadeTxt + '</td><td>' + sfBrl(e.valor_compra) + '</td></tr>';
-      }).join('') || '<tr><td colspan="7">Nenhum equipamento neste filtro.</td></tr>';
+      }).join('') || '<tr><td colspan="8">Nenhum equipamento neste filtro.</td></tr>';
 
       // Tabela "Saúde da Frota por Tipo de Equipamento" (ordenada por valor investido)
       var tipoOrdenado = tipoList.slice().sort(function(a, b){ return b.valor - a.valor; });
@@ -1427,10 +1502,11 @@ JS = """
       }).join('') || '<tr><td colspan="7">Nenhum equipamento neste filtro.</td></tr>';
 
       // Tabela "Cadastro Completo": mostra/oculta linhas já renderizadas
-      var selTipo2 = sfMsTipo.getSelected(), selModelo2 = sfMsModelo.getSelected(), selStatus2 = sfMsStatus.getSelected();
+      var selTipo2 = sfMsTipo.getSelected(), selFab2 = sfMsFabricante.getSelected(), selModelo2 = sfMsModelo.getSelected(), selStatus2 = sfMsStatus.getSelected();
       var vPatrimonio = sfTopPatrimonio.value.trim().toUpperCase();
       sfRows.forEach(function(tr){
         var ok = (selTipo2.size === 0 || selTipo2.has(tr.getAttribute('data-tipo')))
+              && (selFab2.size === 0 || selFab2.has(tr.getAttribute('data-fabricante')))
               && (selModelo2.size === 0 || selModelo2.has(tr.getAttribute('data-modelo')))
               && (selStatus2.size === 0 || selStatus2.has(tr.getAttribute('data-status')))
               && (!vPatrimonio || tr.getAttribute('data-patrimonio').toUpperCase().indexOf(vPatrimonio) !== -1);
@@ -1443,7 +1519,7 @@ JS = """
     sfTopPatrimonio.addEventListener('input', sfRecompute);
     var sfTopLimpar = document.getElementById('sfTopLimpar');
     if(sfTopLimpar) sfTopLimpar.addEventListener('click', function(){
-      [sfMsTipo, sfMsModelo, sfMsStatus].forEach(function(ms){ ms.clear(); });
+      [sfMsTipo, sfMsFabricante, sfMsModelo, sfMsStatus].forEach(function(ms){ ms.clear(); });
       sfTopPatrimonio.value = '';
       sfRecompute();
     });
