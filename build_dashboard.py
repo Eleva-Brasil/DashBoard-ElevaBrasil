@@ -310,6 +310,7 @@ saude["Lucro Acumulado"] = saude["Faturamento Acumulado"] - saude["Despesas Acum
 
 data_compra = pd.to_datetime(saude["Data de Compra"], errors="coerce")
 saude["Idade (anos)"] = (HOJE - data_compra).dt.days / 365.25
+saude["Data de Compra (txt)"] = data_compra.dt.strftime("%d/%m/%Y")
 
 
 def _roi(row):
@@ -374,6 +375,7 @@ for _, r in nunca_alugado.sort_values("Valor de Compra", ascending=False).head(1
         "tipo": r["Tipo do Modelo"],
         "status": r["Status"],
         "idade_anos": round(r["Idade (anos)"], 1) if pd.notna(r["Idade (anos)"]) else None,
+        "data_compra": r["Data de Compra (txt)"] if pd.notna(r["Data de Compra (txt)"]) else None,
         "valor_compra": float(r["Valor de Compra"]),
     })
 
@@ -402,6 +404,7 @@ for _, r in saude.sort_values("Lucro Acumulado", ascending=False).iterrows():
         "tipo": r["Tipo do Modelo"],
         "status": r["Status"],
         "idade_anos": round(r["Idade (anos)"], 1) if pd.notna(r["Idade (anos)"]) else None,
+        "data_compra": r["Data de Compra (txt)"] if pd.notna(r["Data de Compra (txt)"]) else None,
         "valor_compra": float(r["Valor de Compra"]),
         "faturamento": float(r["Faturamento Acumulado"]),
         "despesas": float(r["Despesas Acumuladas"]),

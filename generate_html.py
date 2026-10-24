@@ -612,7 +612,7 @@ modelos_table_card = f"""
 """
 
 # ---------------------------------------------------------------------------
-# Tabela - Equipamentos Disponíveis para Locação (unidade a unidade)
+# Tabela - Equipamentos Disponíveis (unidade a unidade)
 # ---------------------------------------------------------------------------
 equip_disp = D["equipamentos_disponiveis"]
 equip_rows = []
@@ -625,7 +625,7 @@ for e in equip_disp:
 
 equip_disp_card = f"""
 <div class="table-card table-narrow">
-  <h3>Equipamentos Disponíveis para Locação</h3>
+  <h3>Equipamentos Disponíveis</h3>
   <div class="tbl-scroll">
     <table>
       <thead><tr>
@@ -638,7 +638,7 @@ equip_disp_card = f"""
 """
 
 # ---------------------------------------------------------------------------
-# ABA "Ocupação da Frota" - Valor de Aquisição
+# ABA "Ocupação Financeira da Frota" - Valor de Aquisição
 # ---------------------------------------------------------------------------
 af = D["ativo_fixo"]
 af_tipos = D["ativo_fixo_tipos"]
@@ -671,7 +671,7 @@ af_page = f"""
     <div class="header-left">
       <img class="logo" src="data:image/png;base64,{LOGO_B64}" alt="Eleva Brasil" />
       <div class="title-block">
-        <h1>Ocupação da Frota — Valor de Aquisição</h1>
+        <h1>Ocupação Financeira da Frota</h1>
         <div class="sub">Eleva Brasil</div>
       </div>
     </div>
@@ -733,7 +733,7 @@ af_page = f"""
   </div>
 
   <div class="footer">
-    Dashboard de Ocupação da Frota &middot; Eleva Brasil &middot; métrica principal: Valor de Compra (Ativo Fixo) &middot; status/contagem ao vivo via API LOC1, valor atualizado quando a planilha de Ativo Fixo for reenviada.
+    Dashboard de Ocupação Financeira da Frota &middot; Eleva Brasil &middot; métrica principal: Valor de Compra (Ativo Fixo) &middot; status/contagem ao vivo via API LOC1, valor atualizado quando a planilha de Ativo Fixo for reenviada.
   </div>
 </div>
 """
@@ -794,6 +794,7 @@ for e in sf_nunca_lista:
       <td>{e['modelo']}</td>
       <td>{e['tipo'].title()}</td>
       <td>{e['status']}</td>
+      <td>{e['data_compra'] or '—'}</td>
       <td>{idade_txt}</td>
       <td>{brl(e['valor_compra'], 0)}</td>
     </tr>""")
@@ -805,7 +806,7 @@ sf_nunca_card = f"""
   <div class="tbl-scroll">
     <table>
       <thead><tr>
-        <th>Patrimônio</th><th>Modelo</th><th>Tipo</th><th>Status</th><th>Idade</th><th>Valor de Compra</th>
+        <th>Patrimônio</th><th>Modelo</th><th>Tipo</th><th>Status</th><th>Data de Compra</th><th>Idade</th><th>Valor de Compra</th>
       </tr></thead>
       <tbody id="sfNuncaTbody">{''.join(sf_nunca_rows)}</tbody>
     </table>
@@ -854,6 +855,7 @@ for e in sf_tabela:
       <td>{e['modelo']}</td>
       <td>{tipo_title}</td>
       <td>{e['status']}</td>
+      <td>{e['data_compra'] or '—'}</td>
       <td>{idade_txt}</td>
       <td>{brl(e['valor_compra'], 0)}</td>
       <td>{brl(e['faturamento'], 0)}</td>
@@ -874,7 +876,7 @@ sf_tabela_card = f"""
   <div class="tbl-scroll">
     <table id="tabelaSaude">
       <thead><tr>
-        <th>Patrimônio</th><th>Modelo</th><th>Tipo</th><th>Status</th><th>Idade</th><th>Valor de Compra</th><th>Faturamento Acum.</th><th>Despesas Acum.</th><th>Lucro Acum.</th><th>ROI %</th><th></th>
+        <th>Patrimônio</th><th>Modelo</th><th>Tipo</th><th>Status</th><th>Data de Compra</th><th>Idade</th><th>Valor de Compra</th><th>Faturamento Acum.</th><th>Despesas Acum.</th><th>Lucro Acum.</th><th>ROI %</th><th></th>
       </tr></thead>
       <tbody id="tabelaSaudeBody">{''.join(sf_rows)}</tbody>
     </table>
@@ -887,7 +889,7 @@ sf_tabela_card = f"""
 sf_raw_json = json.dumps([
     {
         "patrimonio": e["patrimonio"], "modelo": e["modelo"], "tipo": e["tipo"].title(),
-        "status": e["status"], "idade": e["idade_anos"], "valor_compra": e["valor_compra"],
+        "status": e["status"], "data_compra": e["data_compra"], "idade": e["idade_anos"], "valor_compra": e["valor_compra"],
         "faturamento": e["faturamento"], "despesas": e["despesas"], "lucro": e["lucro"],
         "roi": e["roi_pct"], "tem_registro": e["tem_registro_financeiro"],
     }
@@ -1382,8 +1384,8 @@ JS = """
       document.getElementById('sfNuncaTbody').innerHTML = nuncaTop.map(function(e){
         var idadeTxt = e.idade !== null ? e.idade.toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1}) + ' anos' : '—';
         return '<tr><td>' + e.patrimonio + '</td><td>' + e.modelo + '</td><td>' + e.tipo + '</td>' +
-          '<td>' + e.status + '</td><td>' + idadeTxt + '</td><td>' + sfBrl(e.valor_compra) + '</td></tr>';
-      }).join('') || '<tr><td colspan="6">Nenhum equipamento neste filtro.</td></tr>';
+          '<td>' + e.status + '</td><td>' + (e.data_compra || '—') + '</td><td>' + idadeTxt + '</td><td>' + sfBrl(e.valor_compra) + '</td></tr>';
+      }).join('') || '<tr><td colspan="7">Nenhum equipamento neste filtro.</td></tr>';
 
       // Tabela "Saúde da Frota por Tipo de Equipamento" (ordenada por valor investido)
       var tipoOrdenado = tipoList.slice().sort(function(a, b){ return b.valor - a.valor; });
@@ -1439,7 +1441,7 @@ html = f"""<!doctype html>
       <button class="sidebar-toggle" id="sidebarCollapse" title="Ocultar menu" aria-label="Ocultar menu">&laquo;</button>
     </div>
     <button class="tab-btn active" data-tab="exec">Visão Executiva</button>
-    <button class="tab-btn" data-tab="af">Ocupação da Frota</button>
+    <button class="tab-btn" data-tab="af">Ocupação Financeira da Frota</button>
     <button class="tab-btn" data-tab="saude">Saúde da Frota</button>
   </nav>
   <button class="sidebar-toggle sidebar-toggle-open" id="sidebarExpand" title="Mostrar menu" aria-label="Mostrar menu">&raquo;</button>
@@ -1452,20 +1454,20 @@ html = f"""<!doctype html>
         <div class="section-title"><h2>Frota</h2><span class="hint">Situação atual dos equipamentos</span></div>
         {kpi_frota}
 
-        <div class="section-title"><h2>Faturamento</h2><span class="hint">Valores líquidos, salvo indicação em contrário</span></div>
-        {kpi_fat}
-
         <div class="section-title"><h2>Potencial de Faturamento</h2><span class="hint">Onde está o dinheiro da frota, por status</span></div>
         {kpi_pot}
 
-        <div class="grid grid-2" style="margin-top:14px; align-items:stretch;">
-          {occ_table_card}
-          {equip_disp_card}
-        </div>
+        <div class="section-title"><h2>Faturamento</h2><span class="hint">Valores líquidos, salvo indicação em contrário</span></div>
+        {kpi_fat}
 
         <div class="section-title"><h2>Comparativo Anual</h2><span class="hint">Momento atual x mesmo momento do ano passado</span></div>
         <div style="margin-top:4px;">
           {yoy_card}
+        </div>
+
+        <div class="grid grid-2" style="margin-top:14px; align-items:stretch;">
+          {occ_table_card}
+          {equip_disp_card}
         </div>
 
         <div style="margin-top:14px;">
