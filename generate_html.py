@@ -882,8 +882,9 @@ if og_meta:
     valor_medio = af["total_valor"] / af["total_maquinas"] if af["total_maquinas"] else 0
     maq_eq = round(falta_v / valor_medio) if valor_medio else 0
     if falta_v > 0:
-        meta_txt = (f'Faltam <b>{f"{falta_pp:.1f}".replace(".", ",")} p.p.</b> &mdash; colocar mais <b>{brl_m(falta_v)}</b> de capital em contrato '
-                    f'(&asymp; {fmt_int(maq_eq)} máquinas de valor médio)')
+        valor_medio_txt = f"R$ {fmt_int(round(valor_medio / 1000))} mil"
+        meta_txt = (f'Para chegar a {pct(og_meta, 0)}, falta alugar máquinas que somem <b>{brl_m(falta_v)}</b> em valor de compra '
+                    f'(cerca de <b>{fmt_int(maq_eq)} máquinas</b> de valor médio de <b>{valor_medio_txt}</b>).')
         meta_tag = '<span class="tag warning">abaixo da meta</span>'
     else:
         meta_txt = f'Meta atingida, com <b>{f"{atual - og_meta:.1f}".replace(".", ",")} p.p.</b> de folga'
