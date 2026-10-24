@@ -312,11 +312,6 @@ table.tbl-equip th:nth-child(-n+4), table.tbl-equip td:nth-child(-n+4){ text-ali
 table.tbl-equip th:nth-child(5), table.tbl-equip td:nth-child(5){ text-align:center; }
 table.tbl-equip tbody tr:hover td{ background:#f7f9fc; }
 table.tbl-equip td.col-patr{ font-weight:600; }
-.st{ display:inline-flex; align-items:center; gap:6px; }
-.st::before{ content:""; width:7px; height:7px; border-radius:50%; background:var(--ink-muted); flex-shrink:0; }
-.st-disp::before{ background:var(--status-disp); }
-.st-contr::before{ background:var(--status-contr); }
-.st-manut::before{ background:var(--status-manut); }
 tbody tr:hover{ background:#f7f9fc; }
 .num-crit{ color:var(--critical); font-weight:700; }
 .num-good{ color:var(--good); font-weight:700; }
