@@ -196,12 +196,12 @@ piv["Manutencao_pct"] = piv["Em Manutenção"] / piv["Total"] * 100
 piv = piv.reset_index().sort_values("Total", ascending=False)
 
 # Fabricante por Modelo (a API não expõe a marca) - de-para mantido em
-# fabricante_mapping.csv; modelo novo sem cadastro aparece como "Não identificado".
+# fabricante_mapping.csv; modelo novo sem cadastro aparece como "NÃO IDENTIFICADO".
 FABRICANTE_POR_MODELO = pd.read_csv(BASE / "fabricante_mapping.csv", dtype=str).set_index("Modelo")["Fabricante"].to_dict()
 
 
 def fabricante(modelo):
-    return FABRICANTE_POR_MODELO.get(modelo, "Não identificado")
+    return FABRICANTE_POR_MODELO.get(modelo, "NÃO IDENTIFICADO")
 
 
 modelos_tabela = []

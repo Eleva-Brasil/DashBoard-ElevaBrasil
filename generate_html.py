@@ -333,6 +333,27 @@ table.tbl-og-par td:first-child{ color:var(--ink-muted); width:20px; }
 .grid-2-iguais{ grid-template-columns:1fr 1fr; }
 @media (max-width:1200px){ .grid-2-iguais{ grid-template-columns:1fr; } }
 .vazio{ padding:26px 10px; text-align:center; color:var(--ink-muted); font-size:13px; }
+.txt-contr{ color:var(--status-contr); } .txt-disp{ color:var(--status-disp); } .txt-manut{ color:var(--status-manut); }
+.meta-top{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.meta-top h3{ margin:0; }
+.meta-nums{ display:flex; gap:34px; margin:10px 0 12px; }
+.meta-nums > div, .fxf > div{ display:flex; flex-direction:column; }
+.meta-lbl{ font-size:11px; color:var(--ink-muted); text-transform:uppercase; letter-spacing:.4px; margin-top:3px; }
+.meta-val{ font-size:28px; font-weight:800; line-height:1; order:2; }
+.meta-nums .meta-lbl{ order:1; margin:0 0 4px; }
+.meta-bar{ position:relative; height:14px; border-radius:8px; background:#eef1f5; margin-top:22px; }
+.meta-fill{ height:100%; border-radius:8px; background:var(--status-contr); }
+.meta-mark{ position:absolute; top:-8px; bottom:-8px; width:0; border-left:2px dashed var(--ink-primary); }
+.meta-mark span{ position:absolute; top:-16px; left:0; transform:translateX(-50%); font-size:10.5px; font-weight:700; color:var(--ink-primary); white-space:nowrap; }
+.meta-escala{ display:flex; justify-content:space-between; font-size:10.5px; color:var(--ink-muted); margin-top:6px; }
+.fxf{ display:flex; gap:22px; margin-bottom:8px; }
+.card h3 .tag{ text-transform:none; letter-spacing:0; margin-left:4px; vertical-align:1px; }
+.seg{ display:inline-flex; border:1px solid #dfe3ea; border-radius:8px; overflow:hidden; height:34px; }
+.seg-btn{ border:none; background:#fff; padding:0 14px; font-size:12.5px; font-family:inherit; color:var(--ink-secondary); cursor:pointer; }
+.seg-btn + .seg-btn{ border-left:1px solid #dfe3ea; }
+.seg-btn.active{ background:var(--neutral-bg); color:var(--neutral); font-weight:600; }
+table.tbl-og-cmp tbody tr.melhor td{ background:var(--good-bg); }
+.amostra{ font-size:10px; color:var(--ink-muted); font-weight:400; display:block; }
 .v-short{ display:none; }
 .yoy-mob{ display:none; }
 
@@ -405,6 +426,15 @@ table.tbl-og-par td:first-child{ color:var(--ink-muted); width:20px; }
   table.tbl-tipo-saude th:nth-child(4), table.tbl-tipo-saude td:nth-child(4),
   table.tbl-tipo-saude th:nth-child(5), table.tbl-tipo-saude td:nth-child(5),
   table.tbl-og{ font-size:11.5px; }
+  .meta-nums{ gap:22px; }
+  .meta-val{ font-size:24px; }
+  .fxf{ gap:12px; }
+  .fxf .kpi-value{ font-size:19px; }
+  .fxf .meta-lbl{ font-size:9.5px; }
+  table.tbl-og-cmp th:nth-child(2), table.tbl-og-cmp td:nth-child(2),
+  table.tbl-og-cmp th:nth-child(3), table.tbl-og-cmp td:nth-child(3),
+  table.tbl-og-cmp th:nth-child(7), table.tbl-og-cmp td:nth-child(7),
+  table.tbl-og-cmp th:nth-child(8), table.tbl-og-cmp td:nth-child(8){ display:none; }
   .occ-row.occ-row-fab{ grid-template-columns:1fr 50px; }
   table.tbl-og thead th, table.tbl-og tbody td{ padding:6px 4px; white-space:normal; }
   table.tbl-og-fab th:nth-child(2), table.tbl-og-fab td:nth-child(2),
@@ -835,17 +865,47 @@ def pct_ou_traco(v):
 cap_total = af["total_valor"] or 1
 seg = lambda v: v / cap_total * 100
 gap = af["ocupacao_financeira_pct"] - af["ocupacao_fisica_pct"]
+gap_pp = f"{abs(gap):.1f}".replace(".", ",")
 if gap >= 0:
-    gap_txt = "As máquinas de maior valor estão mais alugadas que as de menor valor"
-    gap_tag = '<span class="tag good">sinal positivo</span>'
+    gap_txt = f"Financeira <b>{gap_pp} p.p. acima</b> da física: as máquinas mais caras são as mais alugadas."
+    gap_tag = '<span class="tag good">positivo</span>'
 else:
-    gap_txt = "As máquinas de maior valor estão MENOS alugadas que as de menor valor"
+    gap_txt = f"Financeira <b>{gap_pp} p.p. abaixo</b> da física: as máquinas mais caras estão paradas."
     gap_tag = '<span class="tag critical">atenção</span>'
-meta_html = ""
+
+# Quadro de meta: barra de progresso (onde estamos x meta)
+og_meta_card = ""
 if og_meta:
-    falta = max(og_meta / 100 * af["total_valor"] - af["contrato_v"], 0)
-    meta_html = (f'<div class="kpi-sub" style="margin-top:6px;">Meta {pct(og_meta)} &middot; '
-                 + (f'faltam <b>{brl_m(falta)}</b> em contrato' if falta > 0 else '<b>meta atingida</b>') + '</div>')
+    atual = af["ocupacao_financeira_pct"]
+    falta_v = max(og_meta / 100 * af["total_valor"] - af["contrato_v"], 0)
+    falta_pp = max(og_meta - atual, 0)
+    valor_medio = af["total_valor"] / af["total_maquinas"] if af["total_maquinas"] else 0
+    maq_eq = round(falta_v / valor_medio) if valor_medio else 0
+    if falta_v > 0:
+        meta_txt = (f'Faltam <b>{f"{falta_pp:.1f}".replace(".", ",")} p.p.</b> &mdash; colocar mais <b>{brl_m(falta_v)}</b> de capital em contrato '
+                    f'(&asymp; {fmt_int(maq_eq)} máquinas de valor médio)')
+        meta_tag = '<span class="tag warning">abaixo da meta</span>'
+    else:
+        meta_txt = f'Meta atingida, com <b>{f"{atual - og_meta:.1f}".replace(".", ",")} p.p.</b> de folga'
+        meta_tag = '<span class="tag good">meta atingida</span>'
+    og_meta_card = f"""
+<div class="card meta-card" style="margin-top:14px;">
+  <div class="meta-top">
+    <h3>Meta de Ocupação Financeira</h3>
+    {meta_tag}
+  </div>
+  <div class="meta-nums">
+    <div><span class="meta-lbl">Atual</span><span class="meta-val" style="color:var(--status-contr-text)">{pct(atual)}</span></div>
+    <div><span class="meta-lbl">Meta</span><span class="meta-val">{pct(og_meta)}</span></div>
+  </div>
+  <div class="meta-bar">
+    <div class="meta-fill" style="width:{min(atual, 100):.2f}%"></div>
+    <div class="meta-mark" style="left:{min(og_meta, 100):.2f}%"><span>meta {pct(og_meta, 0)}</span></div>
+  </div>
+  <div class="meta-escala"><span>0%</span><span>50%</span><span>100%</span></div>
+  <div class="kpi-sub" style="margin-top:8px;">{meta_txt}</div>
+</div>
+"""
 
 og_kpis = f"""
 <div class="grid grid-5">
@@ -862,23 +922,25 @@ og_kpis = f"""
   <div class="card">
     <h3>Capital Produtivo (Em Contrato)</h3>
     <div class="kpi-row"><span class="kpi-value" style="color:var(--status-contr-text)">{brl_m(af['contrato_v'])}</span></div>
-    <div class="kpi-sub">{pct(af['ocupacao_financeira_pct'])} do capital &middot; {fmt_int(af['contrato_n'])} máq.</div>
-    {meta_html}
+    <div class="kpi-sub">{pct(af['ocupacao_financeira_pct'])} do capital investido &middot; {fmt_int(af['contrato_n'])} máquinas</div>
   </div>
   <div class="card">
     <h3>Capital Parado (Disponível)</h3>
     <div class="kpi-row"><span class="kpi-value" style="color:var(--status-disp)">{brl_m(af['disponivel_v'])}</span></div>
-    <div class="kpi-sub">{pct(seg(af['disponivel_v']))} do capital &middot; {fmt_int(af['disponivel_n'])} máq.</div>
+    <div class="kpi-sub">{pct(seg(af['disponivel_v']))} do capital investido &middot; {fmt_int(af['disponivel_n'])} máquinas</div>
   </div>
   <div class="card">
     <h3>Capital em Manutenção</h3>
     <div class="kpi-row"><span class="kpi-value" style="color:var(--status-manut)">{brl_m(af['manutencao_v'])}</span></div>
-    <div class="kpi-sub">{pct(seg(af['manutencao_v']))} do capital &middot; {fmt_int(af['manutencao_n'])} máq.</div>
+    <div class="kpi-sub">{pct(seg(af['manutencao_v']))} do capital investido &middot; {fmt_int(af['manutencao_n'])} máquinas</div>
   </div>
   <div class="card">
-    <h3>Ocupação Física x Financeira</h3>
-    <div class="kpi-row"><span class="kpi-value">{pct(af['ocupacao_fisica_pct'])}</span><span class="kpi-unit">x</span><span class="kpi-value">{pct(af['ocupacao_financeira_pct'])}</span></div>
-    <div class="kpi-sub">{gap_txt} {gap_tag}</div>
+    <h3>Ocupação Física x Financeira {gap_tag}</h3>
+    <div class="fxf">
+      <div><span class="kpi-value">{pct(af['ocupacao_fisica_pct'])}</span><span class="meta-lbl">física (máquinas)</span></div>
+      <div><span class="kpi-value" style="color:var(--status-contr-text)">{pct(af['ocupacao_financeira_pct'])}</span><span class="meta-lbl">financeira (capital)</span></div>
+    </div>
+    <div class="kpi-sub">{gap_txt}</div>
   </div>
 </div>
 """
@@ -954,7 +1016,7 @@ og_fab_card = f"""
 <div class="grid grid-2 grid-2-iguais" style="align-items:stretch;">
   <div class="table-card">
     <h3>Capital por Fabricante e Status</h3>
-    <span class="hint">barra = capital investido: <i class="dot contr"></i>Em Contrato <i class="dot disp"></i>Disponível <i class="dot manut"></i>Manutenção &middot; % à direita = ocupação financeira</span>
+    <span class="hint">Capital investido: <b class="txt-contr">Em Contrato</b> &middot; <b class="txt-disp">Disponível</b> &middot; <b class="txt-manut">Manutenção</b> &middot; % à direita = ocupação financeira</span>
     {''.join(fab_rows)}
   </div>
   <div class="table-card">
@@ -995,6 +1057,45 @@ og_ret_card = f"""
 <div class="grid grid-2 grid-2-iguais" style="align-items:stretch;">
   {retorno_tabela(og['por_fabricante'], 'Fabricante')}
   {retorno_tabela(og['por_tipo'], 'Tipo', lambda n: n.title())}
+</div>
+"""
+
+INICIO_REGISTROS_FAT = "2024-06-01"  # início do faturamento no SAP B1 (lote de migração em 31/05/2024)
+from datetime import date as _date
+cmp_anos_registros = (_date.today() - _date.fromisoformat(INICIO_REGISTROS_FAT)).days / 365.25
+cmp_tipos = sorted({e["tipo"].title() for e in D["saude_tabela"]})
+cmp_tipo_padrao = "Manipulador Telescópico" if "Manipulador Telescópico" in cmp_tipos else cmp_tipos[0]
+og_cmp_card = f"""
+<div class="table-card">
+  <h3>Qual fabricante vale mais a pena?</h3>
+  <span class="hint">Compare fabricantes (ou modelos) dentro do mesmo tipo de equipamento &middot; base para decisão de compra</span>
+  <div class="filter-row" style="margin-top:10px;">
+    <select class="filter-select" id="cmpTipo">{''.join(f'<option{" selected" if t == cmp_tipo_padrao else ""}>{t}</option>' for t in cmp_tipos)}</select>
+    <select class="filter-select" id="cmpIdade">
+      <option value="99">Todas as idades</option>
+      <option value="5">Compradas há até 5 anos</option>
+      <option value="3">Compradas há até 3 anos</option>
+    </select>
+    <div class="seg" id="cmpAgrupar">
+      <button type="button" class="seg-btn active" data-v="fabricante">Por Fabricante</button>
+      <button type="button" class="seg-btn" data-v="modelo">Por Modelo</button>
+    </div>
+  </div>
+  <div class="tbl-scroll">
+    <table class="tbl-og tbl-og-cmp" data-anos-registros="{cmp_anos_registros:.3f}">
+      <thead><tr>
+        <th id="cmpColNome">Fabricante</th><th>Máq.</th><th>Valor Médio de Compra</th><th>Ocup. Financeira Hoje</th>
+        <th>Faturamento por Máquina / Ano</th><th>Retorno Anual</th><th>Despesas &divide; Faturamento</th><th>Idade Média</th>
+      </tr></thead>
+      <tbody id="cmpBody"></tbody>
+    </table>
+  </div>
+  <div class="kpi-sub" style="margin-top:8px;">
+    <b>Retorno Anual</b> = faturamento por ano &divide; valor de compra (quanto do investimento a máquina devolve por ano).
+    Usa o tempo de uso desde jun/2024 (início dos registros no SAP B1) ou desde a compra, o que for mais recente &mdash;
+    assim máquinas novas e antigas são comparadas de forma justa. O retorno é sobre o preço efetivamente pago na compra.
+    Use o filtro de idade para olhar só as compras mais recentes, se quiser. Grupos com menos de 3 máquinas ficam marcados como amostra pequena.
+  </div>
 </div>
 """
 
@@ -1076,6 +1177,7 @@ af_page = f"""
 
   <div class="section-title"><h2>Capital da Frota</h2><span class="hint">Quanto do capital investido está trabalhando agora</span></div>
   {og_kpis}
+  {og_meta_card}
 
   {og_hist_secao}
   <div class="section-title"><h2>Por Fabricante</h2><span class="hint">Onde o capital de cada marca está</span></div>
@@ -1083,6 +1185,9 @@ af_page = f"""
 
   <div class="section-title"><h2>Retorno sobre o Capital</h2><span class="hint">Quanto cada real investido já devolveu</span></div>
   {og_ret_card}
+
+  <div class="section-title"><h2>Decisão de Compra</h2><span class="hint">Qual fabricante e modelo rendem mais dentro de cada tipo</span></div>
+  {og_cmp_card}
 
   <div class="section-title"><h2>Onde Está o Dinheiro Parado</h2><span class="hint">Prioridade para locação ou manutenção</span></div>
   {og_parados_card}
@@ -1667,6 +1772,65 @@ JS = """
       aplicarFiltros();
     });
   }
+
+  // "Qual fabricante vale mais a pena?" (aba Ocupação Financeira): agrupa os
+  // equipamentos do Tipo escolhido por Fabricante ou Modelo e calcula o retorno
+  // anual (faturamento por ano de uso / valor de compra).
+  (function(){
+    var dadosEl = document.getElementById('sfRawData');
+    var tabela = document.querySelector('.tbl-og-cmp');
+    if(!dadosEl || !tabela) return;
+    var dados = JSON.parse(dadosEl.textContent);
+    var anosReg = parseFloat(tabela.getAttribute('data-anos-registros'));
+    var selTipo = document.getElementById('cmpTipo');
+    var selIdade = document.getElementById('cmpIdade');
+    var botoes = Array.prototype.slice.call(document.querySelectorAll('#cmpAgrupar .seg-btn'));
+    var agrupar = 'fabricante';
+    function brl(v){ return 'R$ ' + Math.round(v).toLocaleString('pt-BR'); }
+    function brlK(v){ return Math.abs(v) >= 1e6 ? 'R$ ' + (v/1e6).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' M' : 'R$ ' + (v/1e3).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1}) + ' K'; }
+    function pct(v){ return v === null ? '—' : v.toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1}) + '%'; }
+    function anos(v){ return v === null ? '—' : v.toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1}) + ' anos'; }
+    function render(){
+      var grupos = {};
+      var idadeMax = parseFloat(selIdade.value);
+      dados.filter(function(e){ return e.tipo === selTipo.value && (idadeMax >= 99 || (e.idade !== null && e.idade <= idadeMax)); }).forEach(function(e){
+        var k = e[agrupar];
+        var g = grupos[k] || (grupos[k] = {nome:k, n:0, valor:0, valorContr:0, fatAno:0, valorComFat:0, fat:0, desp:0, idadeSum:0, idadeN:0});
+        g.n++; g.valor += e.valor_compra; g.fat += e.faturamento; g.desp += e.despesas;
+        if(e.status === 'Em Contrato') g.valorContr += e.valor_compra;
+        if(e.idade !== null){ g.idadeSum += e.idade; g.idadeN++; }
+        var uso = Math.max(Math.min(e.idade === null ? anosReg : e.idade, anosReg), 0.25);
+        g.fatAno += e.faturamento / uso;
+        if(e.valor_compra > 0) g.valorComFat += e.valor_compra;
+      });
+      var lista = Object.keys(grupos).map(function(k){
+        var g = grupos[k];
+        g.retorno = g.valorComFat > 0 ? g.fatAno / g.valorComFat * 100 : null;
+        return g;
+      }).sort(function(a, b){ return ((b.n >= 3) - (a.n >= 3)) || ((b.retorno || -1) - (a.retorno || -1)); });  // amostra pequena vai para o fim
+      var melhor = lista.filter(function(g){ return g.n >= 3 && g.retorno !== null; })[0];
+      document.getElementById('cmpColNome').textContent = agrupar === 'fabricante' ? 'Fabricante' : 'Modelo';
+      document.getElementById('cmpBody').innerHTML = lista.map(function(g){
+        var amostra = g.n < 3 ? '<span class="amostra">amostra pequena</span>' : '';
+        return '<tr' + (g === melhor ? ' class="melhor"' : '') + '><td><b>' + g.nome + '</b>' + amostra + '</td>' +
+          '<td>' + g.n + '</td><td>' + brlK(g.valor / g.n) + '</td>' +
+          '<td>' + pct(g.valor > 0 ? g.valorContr / g.valor * 100 : null) + '</td>' +
+          '<td>' + brlK(g.fatAno / g.n) + '</td>' +
+          '<td class="' + ((g.retorno || 0) >= 30 ? 'num-good' : '') + '"><b>' + pct(g.retorno) + '</b></td>' +
+          '<td>' + pct(g.fat > 0 ? g.desp / g.fat * 100 : null) + '</td>' +
+          '<td>' + anos(g.idadeN ? g.idadeSum / g.idadeN : null) + '</td></tr>';
+      }).join('') || '<tr><td colspan="8">Nenhum equipamento com esses filtros.</td></tr>';
+    }
+    selTipo.addEventListener('change', render);
+    selIdade.addEventListener('change', render);
+    botoes.forEach(function(b){
+      b.addEventListener('click', function(){
+        botoes.forEach(function(x){ x.classList.remove('active'); });
+        b.classList.add('active'); agrupar = b.getAttribute('data-v'); render();
+      });
+    });
+    render();
+  })();
 
   var sfDataEl = document.getElementById('sfRawData');
   if(sfDataEl){
