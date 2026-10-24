@@ -57,11 +57,14 @@ def fmt_int(v):
     return f"{v:,.0f}".replace(",", ".")
 
 
+ROTULO_OPCAO = {"Disponivel": "Disponível"}  # valor interno (LOC1) -> texto exibido
+
+
 def multiselect_html(elem_id, label, options):
     """Filtro de seleção múltipla (botão + painel com checkboxes e busca).
     O JS (wireMultiSelect, no bloco <script> final) liga o comportamento -
     aqui só o HTML/estado inicial (nada selecionado = "todos")."""
-    opts_html = "".join(f'<label class="ms-option"><input type="checkbox" value="{o}"/><span>{o}</span></label>' for o in options)
+    opts_html = "".join(f'<label class="ms-option"><input type="checkbox" value="{o}"/><span>{ROTULO_OPCAO.get(o, o)}</span></label>' for o in options)
     if not options:
         opts_html = '<div class="ms-empty">Nenhuma opção disponível.</div>'
     return f"""<div class="ms-wrap" id="{elem_id}">
@@ -258,18 +261,22 @@ body{
 .table-card h3{ margin:0 0 4px; font-size:13.5px; font-weight:700; color:var(--ink-primary); }
 .table-card .hint{ font-size:11.5px; color:var(--ink-muted); margin-bottom:10px; display:block; }
 .filter-row{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:2px 0 12px; }
-.filter-select{ font-size:12px; padding:6px 10px; border-radius:8px; border:1px solid var(--hairline); background:#fafbfd; color:var(--ink-primary); font-family:inherit; cursor:pointer; }
+.filter-select{ height:34px; box-sizing:border-box; font-size:12.5px; padding:0 12px; border-radius:8px; border:1px solid #dfe3ea; background:#fff; color:var(--ink-primary); font-family:inherit; cursor:pointer; transition:border-color .12s; }
+.filter-select:hover{ border-color:#c3cad6; }
+.filter-search{ width:190px; cursor:text; padding-left:32px; background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238a94a3' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-3.5-3.5'/%3E%3C/svg%3E") no-repeat 11px center; }
+.filter-row .hint{ margin:0 0 0 auto; display:inline; font-size:12px; }
 .filter-select:focus{ outline:2px solid var(--neutral); outline-offset:1px; }
-.filter-clear{ font-size:12px; padding:6px 12px; border-radius:8px; border:1px solid var(--hairline); background:#fff; color:var(--ink-secondary); font-family:inherit; cursor:pointer; }
-.filter-clear:hover{ background:#f1f3f6; }
+.filter-clear{ height:34px; box-sizing:border-box; font-size:12.5px; padding:0 14px; border-radius:8px; border:1px solid transparent; background:transparent; color:var(--neutral); font-weight:600; font-family:inherit; cursor:pointer; }
+.filter-clear:hover{ background:var(--neutral-bg); }
 tr.filtro-oculto{ display:none; }
 
 /* filtro de seleção múltipla (checkbox dropdown) */
 .ms-wrap{ position:relative; }
-.ms-btn{ font-size:12px; padding:6px 26px 6px 10px; border-radius:8px; border:1px solid var(--hairline); background:#fafbfd; color:var(--ink-primary); font-family:inherit; cursor:pointer; white-space:nowrap; position:relative; }
-.ms-btn:after{ content:'\25BE'; position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:10px; color:var(--ink-muted); }
-.ms-btn:hover{ background:#f1f3f6; }
-.ms-btn.active{ border-color:var(--neutral); color:var(--neutral); }
+.ms-btn{ height:34px; box-sizing:border-box; font-size:12.5px; padding:0 32px 0 12px; border-radius:8px; border:1px solid #dfe3ea; background:#fff; color:var(--ink-primary); font-family:inherit; cursor:pointer; white-space:nowrap; position:relative; transition:border-color .12s, background .12s; }
+.ms-btn:after{ content:''; position:absolute; right:13px; top:50%; width:6px; height:6px; border-right:1.6px solid var(--ink-muted); border-bottom:1.6px solid var(--ink-muted); transform:translateY(-70%) rotate(45deg); }
+.ms-btn:hover{ border-color:#c3cad6; }
+.ms-btn.active{ border-color:var(--neutral); color:var(--neutral); background:var(--neutral-bg); font-weight:600; }
+.ms-btn.active:after{ border-color:var(--neutral); }
 .ms-panel{ display:none; position:absolute; top:calc(100% + 5px); left:0; z-index:30; background:#fff; border:1px solid var(--hairline); border-radius:10px; box-shadow:var(--shadow); padding:8px; width:240px; }
 .ms-panel.open{ display:block; }
 .ms-search{ width:100%; box-sizing:border-box; padding:6px 8px; margin-bottom:6px; border:1px solid var(--hairline); border-radius:6px; font-size:12px; font-family:inherit; color:var(--ink-primary); }
@@ -297,6 +304,19 @@ thead th{ position:sticky; top:0; background:#fafbfd; text-align:right; padding:
 thead th:first-child, thead th:nth-child(2){ text-align:left; }
 tbody td{ padding:6px 8px; text-align:right; border-bottom:1px solid #f1f3f6; white-space:nowrap; }
 tbody td:first-child, tbody td:nth-child(2){ text-align:left; }
+/* tabelas por equipamento (Saúde da Frota): texto à esquerda, data ao centro, números à direita */
+table.tbl-equip{ font-size:12px; font-variant-numeric:tabular-nums; }
+table.tbl-equip thead th, table.tbl-equip tbody td{ padding:6px 8px; }
+table.tbl-equip thead th{ white-space:normal; vertical-align:bottom; line-height:1.25; }
+table.tbl-equip th:nth-child(-n+4), table.tbl-equip td:nth-child(-n+4){ text-align:left; }
+table.tbl-equip th:nth-child(5), table.tbl-equip td:nth-child(5){ text-align:center; }
+table.tbl-equip tbody tr:hover td{ background:#f7f9fc; }
+table.tbl-equip td.col-patr{ font-weight:600; }
+.st{ display:inline-flex; align-items:center; gap:6px; }
+.st::before{ content:""; width:7px; height:7px; border-radius:50%; background:var(--ink-muted); flex-shrink:0; }
+.st-disp::before{ background:var(--status-disp); }
+.st-contr::before{ background:var(--status-contr); }
+.st-manut::before{ background:var(--status-manut); }
 tbody tr:hover{ background:#f7f9fc; }
 .num-crit{ color:var(--critical); font-weight:700; }
 .num-good{ color:var(--good); font-weight:700; }
@@ -786,14 +806,22 @@ sf_idade_card = f"""
 </div>
 """
 
+STATUS_ROTULO = {"Disponivel": ("Disponível", "st-disp"), "Em Contrato": ("Em Contrato", "st-contr"), "Em Manutenção": ("Em Manutenção", "st-manut")}
+
+
+def status_html(status):
+    rotulo, cls = STATUS_ROTULO.get(status, (status, ""))
+    return f'<span class="st {cls}">{rotulo}</span>'
+
+
 sf_nunca_rows = []
 for e in sf_nunca_lista:
     idade_txt = f"{e['idade_anos']:.1f} anos".replace(".", ",") if e["idade_anos"] is not None else "—"
     sf_nunca_rows.append(f"""<tr>
-      <td>{e['patrimonio']}</td>
+      <td class="col-patr">{e['patrimonio']}</td>
       <td>{e['modelo']}</td>
       <td>{e['tipo'].title()}</td>
-      <td>{e['status']}</td>
+      <td>{status_html(e['status'])}</td>
       <td>{e['data_compra'] or '—'}</td>
       <td>{idade_txt}</td>
       <td>{brl(e['valor_compra'], 0)}</td>
@@ -804,7 +832,7 @@ sf_nunca_card = f"""
   <h3>Equipamentos que Nunca Geraram Faturamento</h3>
   <span class="hint" id="sfNuncaHint">{fmt_int(sf['qtd_nunca_alugado'])} no total ({fmt_int(sf['qtd_nunca_alugado_disponivel'])} disponíveis agora) &middot; {brl_m(sf['valor_nunca_alugado'])} em capital parado &middot; os 15 de maior valor investido</span>
   <div class="tbl-scroll">
-    <table>
+    <table class="tbl-equip">
       <thead><tr>
         <th>Patrimônio</th><th>Modelo</th><th>Tipo</th><th>Status</th><th>Data de Compra</th><th>Idade</th><th>Valor de Compra</th>
       </tr></thead>
@@ -851,18 +879,17 @@ for e in sf_tabela:
     tipo_title = e['tipo'].title()
     registro_flag = "" if e["tem_registro_financeiro"] else '<span class="tag warning">sem registro</span>'
     sf_rows.append(f"""<tr data-patrimonio="{e['patrimonio']}" data-modelo="{e['modelo']}" data-tipo="{tipo_title}" data-status="{e['status']}">
-      <td>{e['patrimonio']}</td>
+      <td class="col-patr">{e['patrimonio']}</td>
       <td>{e['modelo']}</td>
       <td>{tipo_title}</td>
-      <td>{e['status']}</td>
+      <td>{status_html(e['status'])}</td>
       <td>{e['data_compra'] or '—'}</td>
       <td>{idade_txt}</td>
       <td>{brl(e['valor_compra'], 0)}</td>
-      <td>{brl(e['faturamento'], 0)}</td>
+      <td>{registro_flag or brl(e['faturamento'], 0)}</td>
       <td>{brl(e['despesas'], 0)}</td>
       <td>{brl(e['lucro'], 0)}</td>
       <td class="{roi_cls}">{roi_txt}</td>
-      <td>{registro_flag}</td>
     </tr>""")
 
 sf_modelos_unicos = sorted({e['modelo'] for e in sf_tabela})
@@ -874,9 +901,9 @@ sf_tabela_card = f"""
   <h3>Equipamentos — Cadastro Completo</h3>
   <span class="hint" id="sfCadastroHint">{len(sf_tabela)} de {len(sf_tabela)} equipamentos &middot; ordenado por Lucro Acumulado &middot; role para ver todos</span>
   <div class="tbl-scroll">
-    <table id="tabelaSaude">
+    <table id="tabelaSaude" class="tbl-equip">
       <thead><tr>
-        <th>Patrimônio</th><th>Modelo</th><th>Tipo</th><th>Status</th><th>Data de Compra</th><th>Idade</th><th>Valor de Compra</th><th>Faturamento Acum.</th><th>Despesas Acum.</th><th>Lucro Acum.</th><th>ROI %</th><th></th>
+        <th>Patrimônio</th><th>Modelo</th><th>Tipo</th><th>Status</th><th>Data de Compra</th><th>Idade</th><th>Valor de Compra</th><th>Faturamento Acum.</th><th>Despesas Acum.</th><th>Lucro Acum.</th><th>ROI %</th>
       </tr></thead>
       <tbody id="tabelaSaudeBody">{''.join(sf_rows)}</tbody>
     </table>
@@ -901,7 +928,7 @@ sf_filtro_card = f"""
   <h3>Filtrar Frota</h3>
   <span class="hint">Selecione um ou mais valores de Tipo, Modelo e/ou Status, e/ou busque por Patrimônio - todos os números, gráficos e tabelas desta página recalculam na hora</span>
   <div class="filter-row" style="margin-top:10px;">
-    <input class="filter-select" style="cursor:text;" type="text" id="sfTopPatrimonio" placeholder="Patrimônio (ex: MT292)" autocomplete="off" />
+    <input class="filter-select filter-search" type="text" id="sfTopPatrimonio" placeholder="Buscar patrimônio" autocomplete="off" />
     {multiselect_html('sfTopTipo', 'Tipo', sf_tipos_unicos)}
     {multiselect_html('sfTopModelo', 'Modelo', sf_modelos_unicos)}
     {multiselect_html('sfTopStatus', 'Status', sf_status_unicos)}
@@ -981,7 +1008,7 @@ sf_page = f"""
     <div class="card">
       <h3>Faturamento Acumulado</h3>
       <div class="kpi-value" id="sfKpiFat">{brl_m(sf['faturamento_acumulado_total'])}</div>
-      <div class="kpi-sub">Soma por equipamento &middot; <span class="tag warning">ver nota de qualidade</span></div>
+      <div class="kpi-sub">Soma por equipamento (todos os tipos de nota)</div>
     </div>
     <div class="card">
       <h3>Despesas Acumuladas</h3>
@@ -1150,7 +1177,11 @@ JS = """
     function updateBtn(){
       btn.classList.toggle('active', selected.size > 0);
       if(selected.size === 0) btn.textContent = label + ' (todos)';
-      else if(selected.size === 1) btn.textContent = label + ': ' + Array.from(selected)[0];
+      else if(selected.size === 1){
+        var v = Array.from(selected)[0];
+        var cbSel = checkboxes.filter(function(c){ return c.value === v; })[0];
+        btn.textContent = label + ': ' + (cbSel ? cbSel.nextElementSibling.textContent : v);
+      }
       else btn.textContent = label + ' (' + selected.size + ' selecionados)';
     }
     btn.addEventListener('click', function(e){
@@ -1230,6 +1261,8 @@ JS = """
     var sfRows = Array.prototype.slice.call(document.querySelectorAll('#tabelaSaudeBody tr'));
 
     function sfFmtInt(v){ return Math.round(v).toLocaleString('pt-BR'); }
+    var sfStatusRotulo = {'Disponivel': ['Disponível', 'st-disp'], 'Em Contrato': ['Em Contrato', 'st-contr'], 'Em Manutenção': ['Em Manutenção', 'st-manut']};
+    function sfStatusHtml(st){ var r = sfStatusRotulo[st] || [st, '']; return '<span class="st ' + r[1] + '">' + r[0] + '</span>'; }
     function sfBrl(v){ return 'R$ ' + Math.round(v).toLocaleString('pt-BR'); }
     function sfBrlM(v){
       if(Math.abs(v) < 1000000){ return 'R$ ' + (v/1000).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1}) + ' K'; }
@@ -1383,8 +1416,8 @@ JS = """
       document.getElementById('sfNuncaHint').textContent = sfFmtInt(nuncaAlugado.length) + ' no total (' + sfFmtInt(nuncaDisp) + ' disponíveis agora) · ' + sfBrlM(valorNunca) + ' em capital parado · os 15 de maior valor investido';
       document.getElementById('sfNuncaTbody').innerHTML = nuncaTop.map(function(e){
         var idadeTxt = e.idade !== null ? e.idade.toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1}) + ' anos' : '—';
-        return '<tr><td>' + e.patrimonio + '</td><td>' + e.modelo + '</td><td>' + e.tipo + '</td>' +
-          '<td>' + e.status + '</td><td>' + (e.data_compra || '—') + '</td><td>' + idadeTxt + '</td><td>' + sfBrl(e.valor_compra) + '</td></tr>';
+        return '<tr><td class="col-patr">' + e.patrimonio + '</td><td>' + e.modelo + '</td><td>' + e.tipo + '</td>' +
+          '<td>' + sfStatusHtml(e.status) + '</td><td>' + (e.data_compra || '—') + '</td><td>' + idadeTxt + '</td><td>' + sfBrl(e.valor_compra) + '</td></tr>';
       }).join('') || '<tr><td colspan="7">Nenhum equipamento neste filtro.</td></tr>';
 
       // Tabela "Saúde da Frota por Tipo de Equipamento" (ordenada por valor investido)
